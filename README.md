@@ -26,7 +26,7 @@ Then a **local AI agent** (QVAC, running on your device) does the rest:
 3. **Subscriptions are checked before they are paid.** If you haven't used a service, the agent pauses the payment and asks: keep or cancel?
 4. **Leftovers go to savings** at the end of the week.
 
-**The AI proposes, code decides, you approve.** The model sorts payments and explains its reasoning in plain words, but fixed rules in code set the limits, and no money moves outside them.
+**Your rules are the boss, not the model.** The model reads payments and explains each decision in plain words. Your budget limits are enforced by code, and anything unusual waits for your yes.
 
 ## Why local AI
 
@@ -69,7 +69,7 @@ To be completed at submission. Planned: all money movements are real RGB transfe
 
 ## Security
 
-Test networks and test funds only. Never commit `.env` files, seed phrases, mnemonics or private keys; wallets and keys live in a git-ignored data folder.
+Moneyfest only touches Mutinynet, a Bitcoin test network, with test dollars that have no value. Wallet seeds and keys stay on our machines and are excluded from the repository by `.gitignore`.
 
 ## Team
 
