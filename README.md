@@ -61,6 +61,19 @@ Before kickoff we only:
 - chose the idea and planned the architecture;
 - set up our laptops (Node, Python, QVAC, model downloads) and requested test bitcoin from the Mutinynet faucet.
 
+## Hackathon goals (17–18 October)
+
+What we plan to build during the event. These are goals, not finished features; the final README will mark each one as working, partial or not done.
+
+1. **Envelope wallets:** separate self-custodial RGB wallets for each envelope (food, fun, transport, subscriptions, savings), holding test USDT on Mutinynet.
+2. **Plain-language rules:** the local QVAC model turns rules such as "food 60 a week" into structured JSON; code validates and stores them.
+3. **Income split:** incoming money is divided into envelopes automatically, with real RGB transfers.
+4. **Payment sorting:** each payment is assigned to an envelope by the local model, with a warning when an envelope runs low.
+5. **Subscription check:** before a subscription is paid, the agent checks usage and pays, pauses, or asks the user. Code enforces the decision; the model explains it.
+6. **Savings sweep:** leftover money moves to the savings envelope at the end of the week.
+7. **Simple web UI:** envelopes, balances, warnings, and approve/decline buttons, usable by someone who did not build it.
+8. **WDK (bonus):** envelope wallets built with Tether WDK and `@utexo/wdk-wallet-rgb`.
+
 ## How to run
 
 To be completed during the hackathon, before the Sunday 13:00 deadline.
