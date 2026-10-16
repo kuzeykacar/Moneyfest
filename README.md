@@ -40,18 +40,17 @@ Planned stack (final versions listed at submission):
 
 - **RGB Protocol on Bitcoin:** a test USDT asset on **Mutinynet**. Envelopes are separate RGB wallets; budget moves and subscription payments are real RGB transfers.
 - **QVAC** (`@qvac/sdk`): a small local Qwen model for sorting payments, reading plain-language rules into structured JSON, and explaining decisions.
-- **Tether WDK** with `@utexo/wdk-wallet-rgb`: self-custodial envelope wallets (aiming for the WDK bonus).
 - **Languages:** Python and TypeScript, with a simple web UI.
 
-**Installed and working as of Friday 16 October:** nothing yet. RGB wallets, QVAC models and WDK are set up from kickoff on Saturday.
+**Installed and working as of Friday 16 October:** nothing yet. RGB wallets and QVAC models are set up from kickoff on Saturday.
 
 ## Work done before the hackathon (declared)
 
 **No code, prototypes, designs or app existed before the hackathon.** Before kickoff (Saturday 17 October 2026, 09:30 CEST) we only chose the idea, wrote this README and planned the architecture. All product code will be written during the hackathon, in dated commits.
 
-## Hackathon goals (17–18 October)
+## Hackathon goals
 
-What we plan to build during the event. These are goals, not finished features; the final README will mark each one as working, partial or not done.
+What we plan to build during the event, as a starting point. These are goals, not finished features. We may add, change or drop items as the build goes on, and the final README will mark each one as working, partial or not done.
 
 1. **Envelope wallets:** separate self-custodial RGB wallets for each envelope (food, fun, transport, subscriptions, savings), holding test USDT on Mutinynet.
 2. **Plain-language rules:** the local QVAC model turns rules such as "food 60 a week" into structured JSON; code validates and stores them.
@@ -60,7 +59,6 @@ What we plan to build during the event. These are goals, not finished features; 
 5. **Subscription check:** before a subscription is paid, the agent checks usage and pays, pauses, or asks the user. Code enforces the decision; the model explains it.
 6. **Savings sweep:** leftover money moves to the savings envelope at the end of the week.
 7. **Simple web UI:** envelopes, balances, warnings, and approve/decline buttons, usable by someone who did not build it.
-8. **WDK (bonus):** envelope wallets built with Tether WDK and `@utexo/wdk-wallet-rgb`.
 
 ## What is real and what is simulated
 
