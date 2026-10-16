@@ -63,10 +63,6 @@ What we plan to build during the event. These are goals, not finished features; 
 7. **Simple web UI:** envelopes, balances, warnings, and approve/decline buttons, usable by someone who did not build it.
 8. **WDK (bonus):** envelope wallets built with Tether WDK and `@utexo/wdk-wallet-rgb`.
 
-## How to run
-
-To be completed during the hackathon, before the Sunday 13:00 deadline.
-
 ## What is real and what is simulated
 
 To be completed at submission. Planned: all money movements are real RGB transfers on Mutinynet (test funds only). Subscription **usage data** in the demo comes from a sample file, because no real service shares usage data with a hackathon prototype.
