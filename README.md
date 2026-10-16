@@ -78,6 +78,6 @@ Test networks and test funds only. Never commit `.env` files, seed phrases, mnem
 | Name | GitHub |
 | ---- | ------ |
 | Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) |
-| Irem Sengor | TBD |
-| Ege Arca Akcay | TBD |
-| Kerem Alp Yildiz | TBD |
+| Irem Sengor |  |
+| Ege Arca Akcay |  |
+| Kerem Alp Yildiz |  |
