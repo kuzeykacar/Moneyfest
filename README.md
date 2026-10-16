@@ -77,6 +77,6 @@ Moneyfest only touches Mutinynet, a Bitcoin test network, with test dollars that
 | Name | GitHub |
 | ---- | ------ |
 | Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) |
-| Irem Sengor |  |
-| Ege Arca Akcay |  |
-| Kerem Alp Yildiz |  |
+| Irem Sengor | [@iurisiur](https://github.com/iurisiur) |
+| Ege Arca Akcay | [@arcakcy](https://github.com/arcakcy) |
+| Kerem Alp Yildiz | [@keremalpyildiz](https://github.com/keremalpyildiz) |
