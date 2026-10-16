@@ -1,0 +1,9 @@
+.env
+.env.*
+*.mnemonic
+seed*
+data/
+wallets/
+__pycache__/
+node_modules/
+.venv/
