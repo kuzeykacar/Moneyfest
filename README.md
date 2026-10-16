@@ -13,9 +13,10 @@ Track: **Private financial intelligence** (on-device budgeting).
 
 | Name | GitHub | Role |
 | ---- | ------ | ---- |
-| Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) | `<role>` |
-| `<Name>` | [@<username>](https://github.com/<username>) | `<role>` |
-| `<Name>` | [@<username>](https://github.com/<username>) | `<role>` |
+| Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) | TBD |
+| Irem Sengor | TBD | TBD |
+| Ege Arca Akcay | TBD | TBD |
+| Kerem Alp Yildiz | TBD | TBD |
 
 ## The problem
 
