@@ -9,11 +9,11 @@ Track: **Private financial intelligence** (on-device budgeting).
 
 ## Team
 
-**Team name:** `<TEAM NAME>`
+**Team name:** Moneyfest
 
 | Name | GitHub | Role |
 | ---- | ------ | ---- |
-| Kuzey Can Kacar | [@<username>](https://github.com/<username>) | `<role>` |
+| Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) | `<role>` |
 | `<Name>` | [@<username>](https://github.com/<username>) | `<role>` |
 | `<Name>` | [@<username>](https://github.com/<username>) | `<role>` |
 
