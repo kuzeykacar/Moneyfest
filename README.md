@@ -34,21 +34,20 @@ Then a **local AI agent** (QVAC, running on your device) does the rest:
 - **Works offline,** with no per-call cost, so the agent can check every single payment.
 - **Self-custody:** you hold your own dollars. The app never holds funds.
 
-## Stack (planned, final versions listed at submission)
+## Stack, and what is installed and working
+
+Planned stack (final versions listed at submission):
 
 - **RGB Protocol on Bitcoin:** a test USDT asset on **Mutinynet**. Envelopes are separate RGB wallets; budget moves and subscription payments are real RGB transfers.
 - **QVAC** (`@qvac/sdk`): a small local Qwen model for sorting payments, reading plain-language rules into structured JSON, and explaining decisions.
 - **Tether WDK** with `@utexo/wdk-wallet-rgb`: self-custodial envelope wallets (aiming for the WDK bonus).
-- Python backend for the rules engine and wallet logic; web UI.
+- **Languages:** Python and TypeScript, with a simple web UI.
+
+**Installed and working as of Friday 16 October:** nothing yet. RGB wallets, QVAC models and WDK are set up from kickoff on Saturday.
 
 ## Work done before the hackathon (declared)
 
-**No product code exists in this repository before kickoff** (Saturday 17 October 2026, 09:30 CEST). All product code will be written during the hackathon, in dated commits.
-
-Before kickoff we only:
-
-- chose the idea and planned the architecture;
-- set up our laptops (Node, Python, QVAC, model downloads) and requested test bitcoin from the Mutinynet faucet.
+**No code, prototypes, designs or app existed before the hackathon.** Before kickoff (Saturday 17 October 2026, 09:30 CEST) we only chose the idea, wrote this README and planned the architecture. All product code will be written during the hackathon, in dated commits.
 
 ## Hackathon goals (17–18 October)
 
