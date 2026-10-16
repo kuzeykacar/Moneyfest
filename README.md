@@ -7,17 +7,6 @@ Private, self-custodial budgeting for digital dollars. A local AI sorts your spe
 Built for the *Agentic Dollars on Bitcoin* hackathon (BLOX Turin, 17–18 October 2026).
 Track: **Private financial intelligence** (on-device budgeting).
 
-## Team
-
-**Team name:** Moneyfest
-
-| Name | GitHub | Role |
-| ---- | ------ | ---- |
-| Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) | TBD |
-| Irem Sengor | TBD | TBD |
-| Ege Arca Akcay | TBD | TBD |
-| Kerem Alp Yildiz | TBD | TBD |
-
 ## The problem
 
 Budgeting apps work, but they ask for your bank login and send every purchase you make to their servers. Your spending history is a detailed map of your life: where you shop, what you buy, which subscriptions you forget about. Students and young workers run out of money before the end of the month, and they pay for subscriptions they no longer use.
@@ -85,3 +74,14 @@ To be completed at submission. Planned: all money movements are real RGB transfe
 ## Security
 
 Test networks and test funds only. Never commit `.env` files, seed phrases, mnemonics or private keys; wallets and keys live in a git-ignored data folder.
+
+## Team
+
+**Team name:** Moneyfest
+
+| Name | GitHub |
+| ---- | ------ |
+| Kuzey Can Kacar | [@kuzeykacar](https://github.com/kuzeykacar) |
+| Irem Sengor | TBD |
+| Ege Arca Akcay | TBD |
+| Kerem Alp Yildiz | TBD |
