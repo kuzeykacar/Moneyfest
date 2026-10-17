@@ -7,3 +7,4 @@ wallets/
 __pycache__/
 node_modules/
 .venv/
+.kaleido-venv/
