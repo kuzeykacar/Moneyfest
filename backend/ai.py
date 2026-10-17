@@ -55,11 +55,25 @@ Format: {"intent": "balance" | "shops" | "pay" | "help", "shop": "shop name or e
 "language" is the language the message is written in."""
 
 
+def detect_language(text):
+    """Decided by code, not the model: small models mislabel languages."""
+    t = text.lower()
+    if re.search(r"[\u0600-\u06FF]", text):
+        return "ar"
+    if re.search(r"[çğıöşü]|\b(ne|kadar|kredi|dükkan|dukkan|öde|ode|nerede|hangi|merhaba|bakkal)", t):
+        return "tr"
+    return "en"
+
+
 def understand(text, shop_names):
     if USE_FAKE:
-        return _fake_understand(text, shop_names)
-    hint = f"\nApproved shops: {', '.join(shop_names)}."
-    return _json_from(_ask_model(UNDERSTAND_PROMPT + hint, text))
+        result = _fake_understand(text, shop_names)
+    else:
+        hint = (f"\nKnown shops: {', '.join(shop_names)}. If the message names one of them or a shop like it, "
+                "put that exact known name in \"shop\".")
+        result = _json_from(_ask_model(UNDERSTAND_PROMPT + hint, text))
+    result["language"] = detect_language(text)
+    return result
 
 
 def _fake_understand(text, shop_names):

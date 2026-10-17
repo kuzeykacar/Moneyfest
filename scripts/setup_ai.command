@@ -23,7 +23,7 @@ node --version | tee -a "$LOG"
 
 say "2/4 QVAC (into .qvac)"
 cd .qvac || exit 1
-[ -f package.json ] || npm init -y >/dev/null
+[ -f package.json ] || echo '{"name":"moneyfest-qvac","private":true}' > package.json
 [ -d node_modules/@qvac/cli ] || npm install @qvac/cli @qvac/sdk 2>&1 | tail -5 | tee -a "../$LOG"
 
 say "3/4 Choosing a model"

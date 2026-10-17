@@ -68,6 +68,7 @@ class AidProgram:
 
     def _prepare_payment(self, shop, amount, lang):
         """Rules come from code, not from the model."""
+        shop = _match_shop(shop)
         reason = None
         if not shop:
             reason = ai.reason("unknown_shop", lang)
@@ -118,6 +119,24 @@ class AidProgram:
 
     def _log(self, role, text, transfer=None):
         self.logs[role].insert(0, {"time": time.strftime("%H:%M:%S"), "text": text, "transfer": transfer})
+
+
+# Words a family might use for each known shop, in Turkish, English and Arabic.
+_SHOP_WORDS = {
+    SHOP: ["bakkal", "grocery", "market", "food shop", "ahmet", "بقال", "بقالة", "سوق"],
+    UNAPPROVED[0]: ["elektronik", "electronic", "electronics", "إلكترونيات"],
+}
+
+
+def _match_shop(name):
+    """Map whatever the family or the model said to a known shop name, or ''."""
+    n = (name or "").lower()
+    if not n:
+        return ""
+    for shop, words in _SHOP_WORDS.items():
+        if n == shop.lower() or any(w in n for w in words):
+            return shop
+    return name   # unknown shop: the rules will refuse it
 
 
 def _positive_int(value):
