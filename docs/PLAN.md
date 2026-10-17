@@ -9,6 +9,7 @@ python3 backend/app.py
 ```
 
 Open http://127.0.0.1:8000. Python 3.10+ only, nothing to install.
+Leave it running: it restarts by itself when a `.py` file changes (this resets the fake wallets), and page changes show up on refresh. `MONEYFEST_RELOAD=0` turns the auto-restart off.
 By default it uses **fake wallets** and **fake AI**, so everyone can work before RGB and QVAC are ready.
 
 | Setting | Values | Default |

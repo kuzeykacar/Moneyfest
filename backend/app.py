@@ -81,7 +81,44 @@ class Handler(BaseHTTPRequestHandler):
         pass  # keep the terminal quiet
 
 
+def watch_and_restart():
+    """Run the server in a child process and restart it when a .py file changes.
+
+    Page changes (web/) need no restart: the page is read fresh on every refresh.
+    A restart resets the fake wallets. Turn this off with MONEYFEST_RELOAD=0.
+    """
+    import subprocess
+    import time
+
+    here = os.path.dirname(os.path.abspath(__file__))
+
+    def stamps():
+        return {f: os.path.getmtime(os.path.join(here, f)) for f in os.listdir(here) if f.endswith(".py")}
+
+    env = dict(os.environ, MONEYFEST_CHILD="1")
+    while True:
+        before = stamps()
+        child = subprocess.Popen([sys.executable, os.path.abspath(__file__)], env=env)
+        try:
+            while child.poll() is None and stamps() == before:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            child.terminate()
+            return
+        if child.poll() is None:
+            print("Code changed: restarting...")
+            child.terminate()
+            child.wait()
+        else:
+            print("Server stopped with an error. Fix the code and save: it restarts by itself.")
+            while stamps() == before:
+                time.sleep(1)
+
+
 if __name__ == "__main__":
+    if os.environ.get("MONEYFEST_RELOAD", "1") != "0" and not os.environ.get("MONEYFEST_CHILD"):
+        watch_and_restart()
+        sys.exit(0)
     mode = f"wallets={os.environ.get('MONEYFEST_WALLETS', 'fake')}, ai={os.environ.get('MONEYFEST_AI', 'fake')}"
-    print(f"Moneyfest running at http://{HOST}:{PORT}  ({mode})")
+    print(f"Moneyfest running at http://{HOST}:{PORT}  ({mode})", flush=True)
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
