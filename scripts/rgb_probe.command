@@ -18,7 +18,7 @@ log "machine: $(uname -m) $(sw_vers -productVersion 2>/dev/null)"
 log "== Installing rgb-lib into .rgb-venv"
 [ -x .rgb-venv/bin/python ] || $PY -m venv .rgb-venv >>"$OUT" 2>&1
 .rgb-venv/bin/pip install --quiet --upgrade pip >>"$OUT" 2>&1
-.rgb-venv/bin/pip install rgb-lib >>"$OUT" 2>&1
+.rgb-venv/bin/pip uninstall -y rgb-lib >>"$OUT" 2>&1; .rgb-venv/bin/pip install "rgb-lib==0.3.0b7" >>"$OUT" 2>&1
 .rgb-venv/bin/pip show rgb-lib >>"$OUT" 2>&1
 
 log "== rgb-lib API"
