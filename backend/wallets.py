@@ -1,32 +1,31 @@
-"""Wallet layer: the only place where money moves.
+"""Wallet layer: the only place where vouchers move.
 
-Every envelope is its own RGB wallet. The rest of the app only calls the
-functions of the `Wallets` interface below, so the RGB person can replace
-`FakeWallets` with real rgb-lib code without touching anything else.
+Three wallets, one per role: the NGO, a family and a shop. Each is its own
+RGB wallet. The rest of the app only calls the methods of `Wallets`, so the
+RGB person can swap `FakeWallets` for `RgbWallets` without touching anything else.
 
-Amounts are always integers in cents (1250 = 12.50 USDT), never floats.
+Amounts are whole voucher units (1 FOOD = 1 unit). No floats.
 """
 
 import itertools
 import time
 
-# The wallets Moneyfest uses. "shop" stands for the outside world: shops and
-# subscription services we pay. In the demo it is a separate wallet we control.
-WALLET_NAMES = ["spending", "subscriptions", "savings", "shop"]
+WALLET_NAMES = ["ngo", "family", "shop"]
 
 
 class Wallets:
-    """Interface. Real and fake wallets both implement these four methods."""
+    """Interface. Real and fake wallets both implement these methods."""
+
+    def issue(self, wallet, ticker, amount):
+        """Create `amount` new voucher tokens in `wallet`. Returns the asset id."""
+        raise NotImplementedError
 
     def balance(self, wallet):
-        """Return the settled USDT balance of one wallet, in cents."""
+        """Settled voucher balance of one wallet."""
         raise NotImplementedError
 
     def send(self, from_wallet, to_wallet, amount):
-        """Move `amount` cents from one wallet to another.
-
-        Returns a transfer id (string). The transfer may still be settling.
-        """
+        """Move vouchers. Returns a transfer id; the transfer may still be settling."""
         raise NotImplementedError
 
     def status(self, transfer_id):
@@ -34,23 +33,27 @@ class Wallets:
         raise NotImplementedError
 
     def refresh(self):
-        """Ask every wallet to check for new incoming transfers."""
+        """Ask every wallet to look for incoming transfers."""
         raise NotImplementedError
 
 
 class FakeWallets(Wallets):
-    """In-memory wallets for building the UI and rules before RGB works.
+    """In-memory wallets for building the app before RGB works.
 
-    Transfers take `settle_seconds` to settle, like a real Mutinynet block.
+    Transfers take `settle_seconds` to arrive, like a real Mutinynet block.
     """
 
-    def __init__(self, start_balances=None, settle_seconds=3):
+    def __init__(self, settle_seconds=3):
         self.balances = {name: 0 for name in WALLET_NAMES}
-        if start_balances:
-            self.balances.update(start_balances)
+        self.asset_id = None
         self.settle_seconds = settle_seconds
         self.transfers = {}
         self._ids = itertools.count(1)
+
+    def issue(self, wallet, ticker, amount):
+        self.balances[wallet] += amount
+        self.asset_id = self.asset_id or f"rgb:fake-{ticker.lower()}"
+        return self.asset_id
 
     def balance(self, wallet):
         self.refresh()
@@ -58,20 +61,16 @@ class FakeWallets(Wallets):
 
     def send(self, from_wallet, to_wallet, amount):
         if amount <= 0:
-            raise ValueError("amount must be positive")
+            raise ValueError("Amount must be more than zero.")
         self.refresh()
         if self.balances[from_wallet] < amount:
-            raise ValueError(f"Not enough settled money in {from_wallet}. "
-                             "If you just moved money there, wait a few seconds for it to settle.")
-        # The sender's money leaves at once, the receiver gets it when it settles.
+            raise ValueError(f"Not enough settled vouchers in the {from_wallet} wallet. "
+                             "If vouchers just arrived, wait a few seconds for them to settle.")
         self.balances[from_wallet] -= amount
         transfer_id = f"fake-{next(self._ids)}"
-        self.transfers[transfer_id] = {
-            "to": to_wallet,
-            "amount": amount,
-            "settles_at": time.time() + self.settle_seconds,
-            "status": "settling",
-        }
+        self.transfers[transfer_id] = {"to": to_wallet, "amount": amount,
+                                       "settles_at": time.time() + self.settle_seconds,
+                                       "status": "settling"}
         return transfer_id
 
     def status(self, transfer_id):
@@ -87,16 +86,15 @@ class FakeWallets(Wallets):
 
 
 class RgbWallets(Wallets):
-    """Real RGB wallets on Mutinynet, using rgb-lib (Python bindings).
+    """Real RGB wallets on Mutinynet: one RGB Lightning Node per role, started with kaleido-cli.
 
-    TODO (RGB person): implement with rgb-lib-python.
-      - one rgb-lib Wallet per name in WALLET_NAMES, each with its own data
-        folder under data/wallets/<name> (git-ignored, back it up!)
-      - send(): receiver creates an invoice (blind_receive or witness_receive),
-        sender calls send(), then both refresh until the transfer is Settled
-      - balance(): get_asset_balance(asset_id).settled, converted to cents
-    Function list: github.com/RGB-Tools/rgb-lib/blob/master/bindings/uniffi/src/rgb-lib.udl
-    Stuck transfers: github.com/RGB-Tools/rgb-lib/tree/master/docs
+    TODO (RGB person + Claude, once the nodes run):
+      - one node per name in WALLET_NAMES, each on its own port (see `kaleido node list`)
+      - issue():   POST /issueassetnia on the NGO node
+      - send():    receiver node POST /rgbinvoice -> sender node sends to that invoice
+                   -> both nodes POST /refreshtransfers until Settled
+      - balance(): POST /assetbalance with the asset id
+    API reference (Swagger): https://rgb-tools.github.io/rgb-lightning-node
     """
 
     def __init__(self, *args, **kwargs):

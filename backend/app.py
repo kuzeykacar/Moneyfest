@@ -1,4 +1,4 @@
-"""Moneyfest server. Standard library only: nothing to install.
+"""Moneyfest aid server. Standard library only: nothing to install.
 
 Run from the repo root:
     python3 backend/app.py
@@ -17,35 +17,22 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-import ai  # noqa: E402
-from rules import Moneyfest  # noqa: E402
+from aid import AidProgram  # noqa: E402
 from wallets import FakeWallets, RgbWallets  # noqa: E402
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 HOST, PORT = "127.0.0.1", int(os.environ.get("PORT", "8000"))
 
-if os.environ.get("MONEYFEST_WALLETS", "fake") == "rgb":
-    wallets = RgbWallets()
-else:
-    wallets = FakeWallets(start_balances={"spending": 50000})  # 500 USDT to play with
-
-app = Moneyfest(wallets, ai)
-
-
-def cents(value):
-    """Turn "12.50" or 12.5 from the page into 1250 cents."""
-    return round(float(str(value).replace(",", ".")) * 100)
-
+wallets = RgbWallets() if os.environ.get("MONEYFEST_WALLETS", "fake") == "rgb" else FakeWallets()
+app = AidProgram(wallets)
 
 # Each route reads a JSON body and returns a JSON-able result.
 ROUTES = {
-    "/api/command": lambda b: app.command(b["text"]),
-    "/api/rules": lambda b: app.set_rules(b["text"]),
-    "/api/income": lambda b: app.receive_income(cents(b["amount"])),
-    "/api/pay": lambda b: app.pay(b["merchant"], cents(b["amount"])),
-    "/api/subscription": lambda b: app.subscription_due(b["name"], cents(b["amount"])),
-    "/api/sweep": lambda b: app.sweep(),
-    "/api/decide": lambda b: app.decide(str(b["id"]), bool(b["approve"])),
+    "/api/ngo/issue": lambda b: app.issue(b["amount"]),
+    "/api/ngo/send": lambda b: app.send_to_family(b["amount"]),
+    "/api/family/ask": lambda b: app.ask(b["text"]),
+    "/api/family/confirm": lambda b: app.confirm(b["id"], bool(b["yes"])),
+    "/api/shop/redeem": lambda b: app.redeem(b["amount"]),
 }
 
 

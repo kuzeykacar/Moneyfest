@@ -3,160 +3,167 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Moneyfest</title>
+<title>Moneyfest Aid</title>
 <style>
-  :root { --bg:#f6f4ef; --card:#fff; --ink:#1d1b18; --muted:#6f6a62; --line:#e4dfd5;
-          --accent:#1f6f50; --warn:#b5541b; --bar:#d9e7df; }
+  :root { --bg:#f4f1ea; --card:#fff; --ink:#1c1a17; --muted:#6c665c; --line:#e2dccf;
+          --ngo:#1f5f8b; --fam:#1f6f50; --shop:#9a5b13; --warn:#b5401b; --bubble:#eef3ef; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#151412; --card:#1f1d1a; --ink:#f1ede6; --muted:#a39d93; --line:#34312c;
-            --accent:#5cc79a; --warn:#f0965a; --bar:#25362d; }
+    :root { --bg:#141311; --card:#1e1c19; --ink:#f1ede5; --muted:#a29c91; --line:#35312b;
+            --ngo:#6fb0de; --fam:#62c79b; --shop:#e3a35a; --warn:#f08a62; --bubble:#24302a; }
   }
   * { box-sizing:border-box; }
   body { margin:0; font:15px/1.45 system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--ink); }
-  header { padding:20px 24px 4px; }
-  h1 { margin:0; font-size:26px; letter-spacing:-0.5px; }
-  header p { margin:2px 0 0; color:var(--muted); }
-  main { display:grid; grid-template-columns: 1.4fr 1fr; gap:16px; padding:16px 24px 32px; max-width:1200px; }
-  @media (max-width: 860px) { main { grid-template-columns:1fr; padding:16px; } }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
-  h2 { margin:0 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:0.6px; color:var(--muted); }
-  .wallets { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-  .wallet b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
-  .wallet span { color:var(--muted); font-size:13px; text-transform:capitalize; }
-  .env { margin:10px 0; }
-  .env .row { display:flex; justify-content:space-between; font-variant-numeric:tabular-nums; }
-  .env .name { text-transform:capitalize; font-weight:600; }
-  .track { height:8px; background:var(--bar); border-radius:4px; overflow:hidden; margin-top:4px; }
-  .fill { height:100%; background:var(--accent); }
-  .fill.low { background:var(--warn); }
-  form { display:flex; gap:8px; margin:8px 0; flex-wrap:wrap; }
-  input { flex:1; min-width:90px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; }
-  button { padding:8px 14px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
-  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
-  .pending { border:1px solid var(--warn); border-radius:10px; padding:12px; margin:8px 0; }
-  .pending p { margin:0 0 8px; }
-  .feed { list-style:none; padding:0; margin:0; max-height:380px; overflow:auto; }
-  .feed li { padding:8px 0; border-bottom:1px solid var(--line); }
-  .feed small { color:var(--muted); font-variant-numeric:tabular-nums; margin-right:6px; }
-  .msg { min-height:20px; color:var(--warn); font-size:13px; }
-  .stack > * + * { margin-top:16px; }
-  .ask { margin:12px 24px 0; max-width:1152px; }
-  .ask input { font-size:17px; padding:12px 14px; }
-  .ask button { padding:12px 20px; }
-  .msg.ok { color:var(--accent); }
-  @media (max-width: 860px) { .ask { margin:12px 16px 0; } }
+  header { padding:18px 24px 6px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  h1 { margin:0; font-size:24px; letter-spacing:-0.4px; }
+  header p { margin:0; color:var(--muted); }
+  .flow { color:var(--muted); font-size:13px; padding:0 24px 10px; }
+  main { display:grid; grid-template-columns:1fr 1.15fr 1fr; gap:16px; padding:6px 24px 28px; }
+  @media (max-width: 980px) { main { grid-template-columns:1fr; padding:6px 16px 24px; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .role { display:flex; justify-content:space-between; align-items:baseline; }
+  .role h2 { margin:0; font-size:15px; text-transform:uppercase; letter-spacing:0.6px; }
+  .role span { color:var(--muted); font-size:12px; }
+  .ngo h2 { color:var(--ngo); } .fam h2 { color:var(--fam); } .shop h2 { color:var(--shop); }
+  .big { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .big small { font-size:14px; color:var(--muted); font-weight:500; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat { border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+  .stat b { display:block; font-size:18px; font-variant-numeric:tabular-nums; }
+  .stat span { color:var(--muted); font-size:12px; }
+  form { display:flex; gap:8px; }
+  input { flex:1; min-width:60px; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink); font:inherit; }
+  button { padding:9px 14px; border:0; border-radius:9px; color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  .ngo button { background:var(--ngo); } .fam button { background:var(--fam); } .shop button { background:var(--shop); }
+  button.ghost { background:transparent !important; color:var(--ink); border:1px solid var(--line); }
+  .log { list-style:none; margin:0; padding:0; font-size:13px; max-height:190px; overflow:auto; }
+  .log li { padding:6px 0; border-top:1px solid var(--line); }
+  .log small { color:var(--muted); margin-right:6px; font-variant-numeric:tabular-nums; }
+  .private { font-size:12px; color:var(--muted); border-left:3px solid var(--line); padding-left:8px; }
+  .chat { background:var(--bg); border-radius:12px; padding:10px; min-height:220px; max-height:300px; overflow:auto; display:flex; flex-direction:column; gap:8px; }
+  .msg { max-width:85%; padding:8px 11px; border-radius:12px; }
+  .msg.family { align-self:flex-end; background:var(--fam); color:#fff; border-bottom-right-radius:4px; }
+  .msg.assistant { align-self:flex-start; background:var(--card); border:1px solid var(--line); border-bottom-left-radius:4px; }
+  .confirm { border:1px solid var(--fam); border-radius:10px; padding:10px; display:flex; gap:8px; align-items:center; justify-content:space-between; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chips button { font-size:12px; padding:5px 9px; font-weight:500; }
+  .err { color:var(--warn); font-size:13px; min-height:18px; }
+  .settling { color:var(--muted); font-size:12px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Moneyfest</h1>
-  <p>Manifest your money, privately.</p>
+  <h1>Moneyfest Aid</h1>
+  <p>Private aid vouchers on Bitcoin (RGB), with an offline assistant in the family's language.</p>
 </header>
-<section class="card ask">
-  <form data-route="/api/command">
-    <input name="text" placeholder="Tell Moneyfest what to do, e.g. “pay Netflix 10” or “pay Esselunga 12.40”" required autofocus>
-    <button>Send</button>
-  </form>
-  <div class="msg" id="askmsg"></div>
-</section>
+<div class="flow">NGO issues vouchers → family spends at an approved shop → shop redeems with the NGO. Each panel only sees its own transfers.</div>
 <main>
-  <div class="stack">
-    <section class="card">
-      <h2>Wallets</h2>
-      <div class="wallets" id="wallets"></div>
-    </section>
-    <section class="card">
-      <h2>This week's envelopes</h2>
-      <div id="envelopes"></div>
-    </section>
-    <section class="card">
-      <h2>Needs your answer</h2>
-      <div id="pending"><p style="color:var(--muted)">Nothing right now.</p></div>
-    </section>
-  </div>
-  <div class="stack">
-    <section class="card">
-      <h2>Your rules</h2>
-      <form data-route="/api/rules">
-        <input name="text" placeholder="food 60, fun 30, transport 20, subscriptions 40" required>
-        <button>Save</button>
-      </form>
-      <h2 style="margin-top:14px">Try it</h2>
-      <form data-route="/api/income"><input name="amount" placeholder="Income, e.g. 500" required><button>Receive</button></form>
-      <form data-route="/api/pay"><input name="merchant" placeholder="Shop, e.g. Esselunga" required><input name="amount" placeholder="12.40" required><button>Pay</button></form>
-      <form data-route="/api/subscription"><input name="name" placeholder="Subscription, e.g. Gym" required><input name="amount" placeholder="25" required><button>Due</button></form>
-      <form data-route="/api/sweep"><button class="ghost">End the week: sweep leftovers to savings</button></form>
-      <div class="msg" id="msg"></div>
-    </section>
-    <section class="card">
-      <h2>Activity</h2>
-      <ul class="feed" id="feed"></ul>
-    </section>
-  </div>
+  <!-- NGO -->
+  <section class="card ngo">
+    <div class="role"><h2>Aid organisation</h2><span>NGO wallet</span></div>
+    <div class="big" id="ngoBal">0 <small>FOOD in stock</small></div>
+    <form data-route="/api/ngo/issue"><input name="amount" value="500" inputmode="numeric"><button>Issue vouchers</button></form>
+    <form data-route="/api/ngo/send"><input name="amount" value="100" inputmode="numeric"><button>Send to Yılmaz family</button></form>
+    <div class="stats">
+      <div class="stat"><b id="issued">0</b><span>issued</span></div>
+      <div class="stat"><b id="sent">0</b><span>sent to families</span></div>
+      <div class="stat" style="grid-column:span 2"><b id="redeemed">0</b><span>redeemed by shops</span></div>
+    </div>
+    <p class="private">The NGO sees totals per shop only. It never sees what a family bought.</p>
+    <div class="err"></div>
+    <ul class="log" id="ngoLog"></ul>
+  </section>
+
+  <!-- FAMILY -->
+  <section class="card fam">
+    <div class="role"><h2>Yılmaz family</h2><span>phone · assistant runs offline</span></div>
+    <div class="big" id="famBal">0 <small>FOOD left</small></div>
+    <div class="chat" id="chat"></div>
+    <div id="confirm"></div>
+    <form data-route="/api/family/ask"><input name="text" placeholder="Ask in Turkish, Arabic or English" autocomplete="off"><button>Send</button></form>
+    <div class="chips">
+      <button class="ghost" data-say="Ne kadar kredim kaldı?">Ne kadar kredim kaldı?</button>
+      <button class="ghost" data-say="Hangi dükkanlar kabul ediyor?">Hangi dükkanlar?</button>
+      <button class="ghost" data-say="Bakkal'a 12 öde">Bakkal'a 12 öde</button>
+      <button class="ghost" data-say="Elektronik Dünyası'na 30 öde">Elektronik'e 30 öde</button>
+    </div>
+    <div class="err"></div>
+  </section>
+
+  <!-- SHOP -->
+  <section class="card shop">
+    <div class="role"><h2>Bakkal Ahmet</h2><span>approved shop wallet</span></div>
+    <div class="big" id="shopBal">0 <small>FOOD received</small></div>
+    <form data-route="/api/shop/redeem"><input name="amount" value="12" inputmode="numeric"><button>Redeem with NGO</button></form>
+    <p class="private">The shop sees voucher payments, not who the family is.</p>
+    <div class="err"></div>
+    <ul class="log" id="shopLog"></ul>
+  </section>
 </main>
 <script>
 const $ = (id) => document.getElementById(id);
-const money = (c) => (c / 100).toFixed(2);
-const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 async function post(route, body) {
-  const r = await fetch(route, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+  const r = await fetch(route, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || "Something went wrong");
   return data;
 }
+const logHtml = (items) => items.map((a) =>
+  `<li><small>${esc(a.time)}</small>${esc(a.text)}${a.transfer ? ' <span class="settling">· RGB transfer</span>' : ""}</li>`).join("");
 
 function render(s) {
-  $("wallets").innerHTML = Object.entries(s.wallets).map(([name, c]) =>
-    `<div class="wallet"><b>${money(c)}</b><span>${esc(name)} · USDT</span></div>`).join("");
+  $("ngoBal").innerHTML = `${s.ngo.balance} <small>FOOD in stock</small>`;
+  $("issued").textContent = s.ngo.issued;
+  $("sent").textContent = s.ngo.sent_to_families;
+  const red = Object.entries(s.ngo.redeemed);
+  $("redeemed").textContent = red.length ? red.map(([k, v]) => `${v} (${k})`).join(", ") : "0";
+  $("ngoLog").innerHTML = logHtml(s.ngo.log);
 
-  $("envelopes").innerHTML = Object.entries(s.envelopes).map(([name, e]) => {
-    const left = Math.max(e.limit - e.spent, 0);
-    const pct = e.limit ? Math.min(100, (left / e.limit) * 100) : 0;
-    return `<div class="env"><div class="row"><span class="name">${esc(name)}</span>
-      <span>${money(left)} left of ${money(e.limit)}</span></div>
-      <div class="track"><div class="fill ${pct < 20 ? "low" : ""}" style="width:${pct}%"></div></div></div>`;
-  }).join("");
+  $("famBal").innerHTML = `${s.family.balance} <small>FOOD left</small>`;
+  const chat = $("chat");
+  chat.innerHTML = s.family.chat.length ? s.family.chat.filter((m) => m.text !== "—").map((m) =>
+    `<div class="msg ${m.from}">${esc(m.text)}</div>`).join("")
+    : `<div class="msg assistant">Merhaba! Bakiyenizi sorabilir veya ödeme yapabilirsiniz.</div>`;
+  chat.scrollTop = chat.scrollHeight;
+  $("confirm").innerHTML = s.family.pending.map((p) => `
+    <div class="confirm"><span>Pay <b>${p.amount} FOOD</b> to ${esc(p.shop)}?</span>
+      <span><button onclick="confirmPay('${p.id}', true)">Confirm</button>
+      <button class="ghost" onclick="confirmPay('${p.id}', false)">Cancel</button></span></div>`).join("");
 
-  $("pending").innerHTML = s.pending.length ? s.pending.map((d) => `
-    <div class="pending"><p>${esc(d.message)}</p>
-      <button onclick="decide('${d.id}', true)">${d.kind === "subscription" ? "Keep and pay" : "Pay anyway"}</button>
-      <button class="ghost" onclick="decide('${d.id}', false)">${d.kind === "subscription" ? "Cancel it" : "Skip"}</button>
-    </div>`).join("") : `<p style="color:var(--muted)">Nothing right now.</p>`;
-
-  $("feed").innerHTML = s.activity.map((a) =>
-    `<li><small>${esc(a.time)}</small>${esc(a.text)}</li>`).join("");
+  $("shopBal").innerHTML = `${s.shop.balance} <small>FOOD received</small>`;
+  $("shopLog").innerHTML = logHtml(s.shop.log);
 }
 
 async function refresh() {
   try { render(await (await fetch("/api/state")).json()); } catch (e) { /* server restarting */ }
 }
-
-async function decide(id, approve) {
-  try { await post("/api/decide", { id, approve }); $("msg").textContent = ""; }
-  catch (e) { $("msg").textContent = e.message; }
+async function confirmPay(id, yes) {
+  const err = document.querySelector(".fam .err");
+  try { await post("/api/family/confirm", { id, yes }); err.textContent = ""; }
+  catch (e) { err.textContent = e.message; }
   refresh();
 }
-
 document.querySelectorAll("form[data-route]").forEach((form) => {
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const out = form.closest("section").querySelector(".msg");
-    out.className = "msg";
+    const err = form.closest("section").querySelector(".err");
     try {
-      const res = await post(form.dataset.route, Object.fromEntries(new FormData(form)));
-      if (res.status === "needs_approval") out.textContent = res.decision.message;
-      else if (res.warning) out.textContent = res.warning;
-      else if (res.status === "paid") { out.className = "msg ok"; out.textContent = "Paid. The transfer is settling."; }
-      else out.textContent = "";
-      form.reset();
-    } catch (e) { out.textContent = e.message; }
+      await post(form.dataset.route, Object.fromEntries(new FormData(form)));
+      err.textContent = "";
+      if (form.dataset.route === "/api/family/ask") form.reset();
+    } catch (e) { err.textContent = e.message; }
     refresh();
   });
 });
-
+document.querySelectorAll("[data-say]").forEach((b) => b.addEventListener("click", async () => {
+  const err = document.querySelector(".fam .err");
+  try { await post("/api/family/ask", { text: b.dataset.say }); err.textContent = ""; }
+  catch (e) { err.textContent = e.message; }
+  refresh();
+}));
 refresh();
-setInterval(refresh, 2000); // transfers settle in the background
+setInterval(refresh, 2000);
 </script>
 </body>
 </html>

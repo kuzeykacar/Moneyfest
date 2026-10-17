@@ -1,14 +1,15 @@
-"""Local AI layer (QVAC).
+"""Local AI layer (QVAC): the family's assistant.
 
-QVAC can serve a local model behind an OpenAI-compatible HTTP API:
+It runs on the family's own device, offline, and speaks their language.
+QVAC serves a local model behind an OpenAI-compatible HTTP API, for example:
 
     npx qvac serve --openai --port 11434 --host 127.0.0.1
 
-This file sends prompts to that local server and asks for JSON back. Nothing
-leaves the laptop. If MONEYFEST_AI=fake, simple keyword rules stand in for the
-model, so the rest of the team can work before QVAC is running.
+With MONEYFEST_AI=fake (the default), simple keyword rules stand in for the
+model, so the app works before QVAC is running.
 
-The model only proposes. rules.py checks every answer before anything happens.
+Safety rule: the model only understands the question and phrases the answer.
+Balances, shop lists and payments come from code (aid.py), never from the model.
 """
 
 import json
@@ -20,27 +21,20 @@ QVAC_URL = os.environ.get("QVAC_URL", "http://127.0.0.1:11434/v1/chat/completion
 QVAC_MODEL = os.environ.get("QVAC_MODEL", "moneyfest")
 USE_FAKE = os.environ.get("MONEYFEST_AI", "fake") == "fake"
 
-CATEGORIES = ["food", "fun", "transport", "other"]
-
 
 def _ask_model(system_prompt, user_text):
-    """Send one prompt to the local QVAC server and return the parsed JSON."""
-    body = {
-        "model": QVAC_MODEL,
-        "temperature": 0,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_text},
-        ],
-    }
-    req = urllib.request.Request(
-        QVAC_URL,
-        data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json"},
-    )
+    """Send one prompt to the local QVAC server and return its text answer."""
+    body = {"model": QVAC_MODEL, "temperature": 0,
+            "messages": [{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": user_text}]}
+    req = urllib.request.Request(QVAC_URL, data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=120) as resp:
-        text = json.load(resp)["choices"][0]["message"]["content"]
-    # Small models sometimes add text or "thinking" around the JSON: keep the JSON part.
+        return json.load(resp)["choices"][0]["message"]["content"]
+
+
+def _json_from(text):
+    """Small models sometimes add words or 'thinking' around the JSON: keep the JSON part."""
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if not match:
         raise ValueError(f"model did not return JSON: {text!r}")
@@ -48,109 +42,84 @@ def _ask_model(system_prompt, user_text):
 
 
 # ---------------------------------------------------------------------------
-# 1. Rules: "food 60 a week" -> {"budgets": {"food": 6000}, ...}
+# 1. Understand: "Ne kadar kredim kaldı?" -> {"intent": "balance", "language": "tr"}
 
-RULES_PROMPT = """You turn a person's budget rules into JSON. Reply with JSON only.
-Format:
-{"budgets": {"food": cents, "fun": cents, "transport": cents, "other": cents},
- "subscriptions_monthly": cents,
- "pause_unused_days": number,
- "sweep_leftovers_to_savings": true or false}
-Budgets are per week. Amounts are in cents (60 = 6000). Leave out anything the person did not say."""
+UNDERSTAND_PROMPT = """You help a family that receives food aid vouchers. Read their message and reply with JSON only.
+Format: {"intent": "balance" | "shops" | "pay" | "help", "shop": "shop name or empty", "amount": number or 0, "language": "tr" | "ar" | "en"}
+- "balance": they ask how much credit is left.
+- "shops": they ask where they can use the vouchers.
+- "pay": they want to pay a shop. Fill "shop" and "amount".
+- "help": anything else.
+"language" is the language the message is written in."""
 
 
-def parse_rules(text):
+def understand(text, shop_names):
     if USE_FAKE:
-        return _fake_parse_rules(text)
-    return _ask_model(RULES_PROMPT, text)
+        return _fake_understand(text, shop_names)
+    hint = f"\nApproved shops: {', '.join(shop_names)}."
+    return _json_from(_ask_model(UNDERSTAND_PROMPT + hint, text))
 
 
-def _fake_parse_rules(text):
+def _fake_understand(text, shop_names):
     t = text.lower()
-    result = {"budgets": {}}
-    for cat in CATEGORIES:
-        m = re.search(cat + r"\D{0,10}(\d+(?:[.,]\d+)?)", t)
-        if m:
-            result["budgets"][cat] = _to_cents(m.group(1))
-    m = re.search(r"subscriptions?\D{0,10}(\d+(?:[.,]\d+)?)", t)
-    if m:
-        result["subscriptions_monthly"] = _to_cents(m.group(1))
-    m = re.search(r"(\d+)\s*days", t)
-    if m:
-        result["pause_unused_days"] = int(m.group(1))
-    if "saving" in t:
-        result["sweep_leftovers_to_savings"] = True
-    return result
+    lang = "ar" if re.search(r"[؀-ۿ]", text) else (
+        "tr" if re.search(r"[çğıöşü]|kredi|kaldı|dükkan|öde|nerede", t) else "en")
+    amount = re.search(r"(\d+)", t)
+    amount = int(amount.group(1)) if amount else 0
+    shop = next((s for s in shop_names if s.lower().split()[0] in t), "")
+    if amount and (shop or any(w in t for w in ("öde", "pay", "ادفع"))):
+        return {"intent": "pay", "shop": shop, "amount": amount, "language": lang}
+    if any(w in t for w in ("dükkan", "nerede", "where", "shop", "store", "متجر", "أين")):
+        return {"intent": "shops", "shop": "", "amount": 0, "language": lang}
+    if any(w in t for w in ("kaldı", "ne kadar", "bakiye", "left", "balance", "how much", "كم", "رصيد")):
+        return {"intent": "balance", "shop": "", "amount": 0, "language": lang}
+    return {"intent": "help", "shop": "", "amount": 0, "language": lang}
 
 
 # ---------------------------------------------------------------------------
-# 1b. Commands: "pay netflix 10 euros" -> {"action": "pay", "to": "Netflix", "amount": 10}
+# 2. Answer: facts from code -> one friendly sentence in the family's language
 
-COMMAND_PROMPT = """You turn one money instruction into JSON. Reply with JSON only.
-Format: {"action": "pay" | "income" | "sweep" | "unknown", "to": "who gets paid", "amount": number}
-- "pay": the person wants to pay a shop, a service, a subscription or a friend.
-- "income": the person received money.
-- "sweep": the person wants to move leftovers to savings.
-- "unknown": anything else, or if the amount is missing.
-Amounts are plain numbers in dollars or euros as written (10 euros = 10). Leave out fields you do not know."""
+ANSWER_PROMPT = """You are a kind assistant for a family receiving food aid. Write a short, simple answer
+(1 to 2 sentences) in the language given by "language" (tr = Turkish, ar = Arabic, en = English).
+Use ONLY the facts given. Never invent numbers or shops. Reply with plain text only."""
 
-
-def parse_command(text):
-    if USE_FAKE:
-        return _fake_parse_command(text)
-    return _ask_model(COMMAND_PROMPT, text)
-
-
-def _fake_parse_command(text):
-    t = text.lower().strip()
-    amount = re.search(r"(\d+(?:[.,]\d+)?)", t)
-    amount = float(amount.group(1).replace(",", ".")) if amount else None
-    if any(w in t for w in ("sweep", "savings", "save leftovers")):
-        return {"action": "sweep"}
-    if any(w in t for w in ("received", "got paid", "income", "salary")):
-        return {"action": "income", "amount": amount} if amount else {"action": "unknown"}
-    m = re.search(r"(?:pay|send|give)\s+(?:to\s+)?([a-z][\w' ]*?)\s+\d", t)
-    if m and amount:
-        return {"action": "pay", "to": m.group(1).strip().title(), "amount": amount}
-    return {"action": "unknown"}
-
-
-# ---------------------------------------------------------------------------
-# 2. Payments: "Esselunga" -> {"category": "food", "reason": "..."}
-
-CLASSIFY_PROMPT = """You sort one payment into a budget category. Reply with JSON only.
-Categories: food, fun, transport, other.
-Format: {"category": "...", "reason": "one short sentence"}"""
-
-_FAKE_SHOPS = {
-    "food": ["esselunga", "carrefour", "coop", "conad", "lidl", "bakery", "pizza", "market"],
-    "fun": ["bar", "cinema", "pub", "concert", "steam", "club", "spotify"],
-    "transport": ["gtt", "bus", "metro", "train", "trenitalia", "uber", "taxi", "bike"],
+_FAKE_ANSWERS = {
+    "balance": {"tr": "{balance} FOOD krediniz kaldı.",
+                "en": "You have {balance} FOOD credit left.",
+                "ar": "لديك {balance} من رصيد الطعام."},
+    "shops": {"tr": "Kuponlarınızı şu dükkanlarda kullanabilirsiniz: {shops}.",
+              "en": "You can use your vouchers at: {shops}.",
+              "ar": "يمكنك استخدام القسائم في: {shops}."},
+    "pay": {"tr": "{shop} için {amount} FOOD ödemesi hazır. Onaylıyor musunuz?",
+            "en": "A payment of {amount} FOOD to {shop} is ready. Do you confirm?",
+            "ar": "دفعة {amount} طعام إلى {shop} جاهزة. هل تؤكد؟"},
+    "paid": {"tr": "Ödeme gönderildi.", "en": "Payment sent.", "ar": "تم إرسال الدفعة."},
+    "error": {"tr": "Bu ödeme yapılamadı: {reason}", "en": "This payment can't be made: {reason}",
+              "ar": "لا يمكن إجراء هذه الدفعة: {reason}"},
+    "help": {"tr": "Bakiyenizi, dükkanları sorabilir veya ödeme yapabilirsiniz. Örnek: \"Bakkal'a 12 öde\".",
+             "en": "You can ask for your balance, the shops, or make a payment. Example: \"Pay 12 to Bakkal\".",
+             "ar": "يمكنك السؤال عن رصيدك أو المتاجر أو الدفع."},
 }
 
 
-def classify_payment(merchant, amount):
+_REASONS = {
+    "unknown_shop": {"tr": "dükkan bulunamadı", "en": "shop not recognised", "ar": "المتجر غير معروف"},
+    "not_approved": {"tr": "{shop} onaylı bir gıda dükkanı değil", "en": "{shop} is not an approved food shop",
+                     "ar": "{shop} ليس متجر طعام معتمد"},
+    "no_amount": {"tr": "tutar eksik", "en": "amount missing", "ar": "المبلغ مفقود"},
+    "too_much": {"tr": "sadece {left} FOOD kaldı", "en": "only {left} FOOD left", "ar": "تبقى {left} فقط"},
+}
+
+
+def reason(code, language, **facts):
+    """Why a payment was refused, in the family's language. Decided by code, not the model."""
+    lang = language if language in ("tr", "en", "ar") else "en"
+    return _REASONS[code][lang].format(**facts)
+
+
+def answer(kind, language, facts):
     if USE_FAKE:
-        name = merchant.lower()
-        for cat, words in _FAKE_SHOPS.items():
-            if any(w in name for w in words):
-                return {"category": cat, "reason": f"{merchant} looks like {cat}."}
-        return {"category": "other", "reason": f"Not sure what {merchant} is."}
-    return _ask_model(CLASSIFY_PROMPT, f"Merchant: {merchant}. Amount: {amount / 100:.2f} USDT.")
-
-
-# ---------------------------------------------------------------------------
-# 3. Explanations: turn a decision made by code into one friendly sentence.
-
-EXPLAIN_PROMPT = """You explain a budgeting decision to the user in one short, friendly sentence.
-Reply with JSON only: {"message": "..."}"""
-
-
-def explain(decision):
-    if USE_FAKE:
-        return decision.get("summary", "Done.")
-    return _ask_model(EXPLAIN_PROMPT, json.dumps(decision))["message"]
-
-
-def _to_cents(number_text):
-    return round(float(number_text.replace(",", ".")) * 100)
+        lang = language if language in ("tr", "en", "ar") else "en"
+        return _FAKE_ANSWERS[kind][lang].format(**facts)
+    return _ask_model(ANSWER_PROMPT, json.dumps({"kind": kind, "language": language, "facts": facts},
+                                               ensure_ascii=False)).strip()
