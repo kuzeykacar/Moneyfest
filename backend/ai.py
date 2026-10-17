@@ -133,8 +133,13 @@ def reason(code, language, **facts):
     return _REASONS[code][lang].format(**facts)
 
 
+# Replies about money are fixed, checked sentences: the model must never say a payment
+# happened before the family confirmed it, or change a number or unit.
+_FIXED_KINDS = {"balance", "pay", "paid", "error"}
+
+
 def answer(kind, language, facts):
-    if USE_FAKE:
+    if USE_FAKE or kind in _FIXED_KINDS:
         lang = language if language in ("tr", "en", "ar") else "en"
         return _FAKE_ANSWERS[kind][lang].format(**facts)
     return _ask_model(ANSWER_PROMPT, json.dumps({"kind": kind, "language": language, "facts": facts},
