@@ -261,6 +261,8 @@ async function landlordCheck() {
     return;
   }
   if (verifiedAsset === box.asset_id) return;
+  const prev = S.landlord.result;
+  if (prev && prev.ok && prev.asset_id === box.asset_id && $("llInbox").dataset.asset === box.asset_id) return;
   verifying = true;
   try {
     vkCache = vkCache || (await (await fetch("zk/verification_key.json")).json());
@@ -291,7 +293,7 @@ async function landlordCheck() {
     $("llInbox").innerHTML = `<div class="result ${ok ? "good" : "fail"}">${rows}
       <ul class="steps">${steps.map((s) => `<li class="${s[1] ? "ok" : "bad"}">${s[1] ? "✓" : "✗"} ${esc(s[0])}${s[2] ? ` <span class="muted">(${esc(s[2])})</span>` : ""}</li>`).join("")}</ul>
       <div class="muted">What I learned about the tenant: only the lines above. No name, no amounts, no documents.</div></div>`;
-    verifiedAsset = box.asset_id;
+    verifiedAsset = box.asset_id; $("llInbox").dataset.asset = box.asset_id;
     await api("/api/landlord/result", { ok, asset_id: box.asset_id, reason: steps.filter((s) => !s[1]).map((s) => s[0]).join("; ") });
   } finally { verifying = false; }
 }

@@ -46,7 +46,7 @@ Built during the *Agentic Dollars on Bitcoin* hackathon (Turin, 17–18 Oct 2026
 Only **digitally signed** documents are accepted. No valid signature, no approval:
 no "looks real" guessing, no metadata checks.
 
-## Status (Sunday 18 Oct, ~01:00)
+## Status (Sunday 18 Oct, 01:00)
 
 | Part | Status |
 |---|---|
@@ -56,7 +56,7 @@ no "looks real" guessing, no metadata checks.
 | Local AI (QVAC) filling the landlord form | ✅ keyword rules as backup if QVAC is off |
 | Web app: landlord + tenant panels | ✅ full flow tested end to end with simulated RGB |
 | Real RGB wallets on Mutinynet | ✅ funded (faucet), RGB slots created, 10,000 TUSDT issued, 2,000 sent to the tenant |
-| Approval token + deposit on real RGB | 🔄 being tested now |
+| Approval token + deposit on real RGB | ✅ settled on Mutinynet ([approval](https://mutinynet.com/tx/01bc272eb2a29629ac95907cca4377dcdf17f83af8d793ecd02324b69daa6655), [deposit](https://mutinynet.com/tx/899d3dc81d352a13112b651381921eeb1b1f4fb7f9d3210bcf1811b8b66e83ba)) |
 | Wallet page (`/wallets.html`) | ✅ balances, assets, transactions; every spend needs a Confirm |
 
 ## What is real, what is demo

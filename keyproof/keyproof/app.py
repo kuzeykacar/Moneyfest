@@ -107,6 +107,9 @@ class Demo:
                 "proof": json.loads(media), "details": tok["details"]}
 
     def result(self, body):
+        prev = self.landlord.get("result")
+        if prev and prev.get("ok") and prev.get("asset_id") == body.get("asset_id"):
+            return prev                # already verified this token (e.g. page reloaded): don't ask twice
         self.landlord["result"] = body
         if body.get("ok"):
             self.log("landlord", "Proof verified: every requested check passed. I never saw the documents.")
