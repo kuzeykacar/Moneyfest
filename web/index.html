@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moneyfest</title>
+<style>
+  :root { --bg:#f6f4ef; --card:#fff; --ink:#1d1b18; --muted:#6f6a62; --line:#e4dfd5;
+          --accent:#1f6f50; --warn:#b5541b; --bar:#d9e7df; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#151412; --card:#1f1d1a; --ink:#f1ede6; --muted:#a39d93; --line:#34312c;
+            --accent:#5cc79a; --warn:#f0965a; --bar:#25362d; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:20px 24px 4px; }
+  h1 { margin:0; font-size:26px; letter-spacing:-0.5px; }
+  header p { margin:2px 0 0; color:var(--muted); }
+  main { display:grid; grid-template-columns: 1.4fr 1fr; gap:16px; padding:16px 24px 32px; max-width:1200px; }
+  @media (max-width: 860px) { main { grid-template-columns:1fr; padding:16px; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  h2 { margin:0 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:0.6px; color:var(--muted); }
+  .wallets { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .wallet b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
+  .wallet span { color:var(--muted); font-size:13px; text-transform:capitalize; }
+  .env { margin:10px 0; }
+  .env .row { display:flex; justify-content:space-between; font-variant-numeric:tabular-nums; }
+  .env .name { text-transform:capitalize; font-weight:600; }
+  .track { height:8px; background:var(--bar); border-radius:4px; overflow:hidden; margin-top:4px; }
+  .fill { height:100%; background:var(--accent); }
+  .fill.low { background:var(--warn); }
+  form { display:flex; gap:8px; margin:8px 0; flex-wrap:wrap; }
+  input { flex:1; min-width:90px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; }
+  button { padding:8px 14px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .pending { border:1px solid var(--warn); border-radius:10px; padding:12px; margin:8px 0; }
+  .pending p { margin:0 0 8px; }
+  .feed { list-style:none; padding:0; margin:0; max-height:380px; overflow:auto; }
+  .feed li { padding:8px 0; border-bottom:1px solid var(--line); }
+  .feed small { color:var(--muted); font-variant-numeric:tabular-nums; margin-right:6px; }
+  .msg { min-height:20px; color:var(--warn); font-size:13px; }
+  .stack > * + * { margin-top:16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Moneyfest</h1>
+  <p>Manifest your money, privately.</p>
+</header>
+<main>
+  <div class="stack">
+    <section class="card">
+      <h2>Wallets</h2>
+      <div class="wallets" id="wallets"></div>
+    </section>
+    <section class="card">
+      <h2>This week's envelopes</h2>
+      <div id="envelopes"></div>
+    </section>
+    <section class="card">
+      <h2>Needs your answer</h2>
+      <div id="pending"><p style="color:var(--muted)">Nothing right now.</p></div>
+    </section>
+  </div>
+  <div class="stack">
+    <section class="card">
+      <h2>Your rules</h2>
+      <form data-route="/api/rules">
+        <input name="text" placeholder="food 60, fun 30, transport 20, subscriptions 40" required>
+        <button>Save</button>
+      </form>
+      <h2 style="margin-top:14px">Try it</h2>
+      <form data-route="/api/income"><input name="amount" placeholder="Income, e.g. 500" required><button>Receive</button></form>
+      <form data-route="/api/pay"><input name="merchant" placeholder="Shop, e.g. Esselunga" required><input name="amount" placeholder="12.40" required><button>Pay</button></form>
+      <form data-route="/api/subscription"><input name="name" placeholder="Subscription, e.g. Gym" required><input name="amount" placeholder="25" required><button>Due</button></form>
+      <form data-route="/api/sweep"><button class="ghost">End the week: sweep leftovers to savings</button></form>
+      <div class="msg" id="msg"></div>
+    </section>
+    <section class="card">
+      <h2>Activity</h2>
+      <ul class="feed" id="feed"></ul>
+    </section>
+  </div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const money = (c) => (c / 100).toFixed(2);
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+
+async function post(route, body) {
+  const r = await fetch(route, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || "Something went wrong");
+  return data;
+}
+
+function render(s) {
+  $("wallets").innerHTML = Object.entries(s.wallets).map(([name, c]) =>
+    `<div class="wallet"><b>${money(c)}</b><span>${esc(name)} · USDT</span></div>`).join("");
+
+  $("envelopes").innerHTML = Object.entries(s.envelopes).map(([name, e]) => {
+    const left = Math.max(e.limit - e.spent, 0);
+    const pct = e.limit ? Math.min(100, (left / e.limit) * 100) : 0;
+    return `<div class="env"><div class="row"><span class="name">${esc(name)}</span>
+      <span>${money(left)} left of ${money(e.limit)}</span></div>
+      <div class="track"><div class="fill ${pct < 20 ? "low" : ""}" style="width:${pct}%"></div></div></div>`;
+  }).join("");
+
+  $("pending").innerHTML = s.pending.length ? s.pending.map((d) => `
+    <div class="pending"><p>${esc(d.message)}</p>
+      <button onclick="decide('${d.id}', true)">${d.kind === "subscription" ? "Keep and pay" : "Pay anyway"}</button>
+      <button class="ghost" onclick="decide('${d.id}', false)">${d.kind === "subscription" ? "Cancel it" : "Skip"}</button>
+    </div>`).join("") : `<p style="color:var(--muted)">Nothing right now.</p>`;
+
+  $("feed").innerHTML = s.activity.map((a) =>
+    `<li><small>${esc(a.time)}</small>${esc(a.text)}</li>`).join("");
+}
+
+async function refresh() {
+  try { render(await (await fetch("/api/state")).json()); } catch (e) { /* server restarting */ }
+}
+
+async function decide(id, approve) {
+  try { await post("/api/decide", { id, approve }); $("msg").textContent = ""; }
+  catch (e) { $("msg").textContent = e.message; }
+  refresh();
+}
+
+document.querySelectorAll("form[data-route]").forEach((form) => {
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    try {
+      const res = await post(form.dataset.route, Object.fromEntries(new FormData(form)));
+      $("msg").textContent = res.warning || (res.status === "needs_approval" ? "Waiting for your answer." : "");
+      form.reset();
+    } catch (e) { $("msg").textContent = e.message; }
+    refresh();
+  });
+});
+
+refresh();
+setInterval(refresh, 2000); // transfers settle in the background
+</script>
+</body>
+</html>

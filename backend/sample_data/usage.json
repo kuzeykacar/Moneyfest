@@ -1,0 +1,6 @@
+{
+  "_note": "Sample data: days since each subscription was last used. The demo has no real usage source.",
+  "Netflix": 2,
+  "Spotify": 1,
+  "Gym": 34
+}
