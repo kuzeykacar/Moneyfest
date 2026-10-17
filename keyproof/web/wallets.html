@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof Wallets</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#262b36; --text:#e8eaf0; --dim:#9aa3b5; --green:#4ade80; --red:#f87171; --amber:#fbbf24; --blue:#7aa2ff; --chip:#1f2430; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 -apple-system,"Segoe UI",Inter,sans-serif; }
+  header { display:flex; gap:14px; align-items:center; padding:14px 22px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { margin:0; font-size:20px; }
+  header a { color:var(--blue); }
+  .dim { color:var(--dim); font-size:13px; }
+  main { padding:18px 22px; max-width:1300px; }
+  .total { display:flex; gap:26px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 18px; margin-bottom:16px; }
+  .total .n { font-size:26px; font-weight:650; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:1100px) { .grid { grid-template-columns:1fr; } }
+  .w { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; min-width:0; }
+  .w h2 { margin:0; font-size:13px; letter-spacing:1.2px; text-transform:uppercase; color:var(--blue); }
+  .addr { font-family:ui-monospace,Menlo,monospace; font-size:11.5px; word-break:break-all; color:var(--dim); margin:4px 0 10px; }
+  .addr a { color:var(--dim); }
+  .bal { display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:14px; }
+  .bal .v { text-align:right; font-variant-numeric:tabular-nums; }
+  .big { font-size:22px; font-weight:650; }
+  .sec { margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
+  .sec h3 { margin:0 0 6px; font-size:13px; color:var(--dim); font-weight:600; }
+  .pill { display:inline-block; padding:3px 9px; border-radius:999px; background:var(--chip); font-size:12.5px; margin:2px 4px 2px 0; }
+  .tx { font-size:12.5px; display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
+  .tx a { color:var(--blue); font-family:ui-monospace,Menlo,monospace; }
+  .plus { color:var(--green); } .minus { color:var(--red); } .wait { color:var(--amber); }
+  .actions { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 18px; margin-top:16px; }
+  .actions h2 { margin:0 0 4px; font-size:16px; }
+  .act { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:9px 0; border-top:1px solid var(--line); }
+  .act:first-of-type { border-top:0; }
+  .act .lbl { min-width:220px; font-weight:600; }
+  select, input { background:#0c0e12; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 8px; font:inherit; }
+  input[type=number] { width:110px; }
+  button { font:inherit; border-radius:9px; border:1px solid #3b5191; background:#2b3a63; color:var(--text); padding:6px 12px; cursor:pointer; }
+  button:disabled { opacity:.45; cursor:default; }
+  .confirm { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; }
+  .confirm .box { background:var(--panel); border:1px solid var(--amber); border-radius:14px; padding:18px 20px; max-width:460px; }
+  .confirm .row { display:flex; gap:8px; margin-top:12px; }
+  .confirm .yes { background:#1d4d33; border-color:#2c7a4f; }
+  .confirm .no { background:var(--chip); border-color:var(--line); }
+  .msg { margin-top:10px; font-size:13.5px; }
+  .explain { font-size:13px; color:var(--dim); margin:6px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔑 KeyProof wallets</h1>
+  <span class="dim">Bitcoin Mutinynet (test network, coins have no value) · refreshes every 30 s (the test network limits how often we may ask)</span>
+  <span style="flex:1"></span>
+  <button onclick="load(true)">Check the network now</button>
+  <a href="/">← back to the demo</a>
+</header>
+<main>
+  <div id="notReal" class="dim" style="display:none">The app is running with simulated RGB. Start it with <b>scripts/run_real.command</b> to see the real wallets.</div>
+  <div class="total" id="total"></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="actions">
+    <h2>Actions</h2>
+    <div class="dim">Nothing moves until you press Confirm. Each step shows what it costs first. Fees are paid to Bitcoin miners; everything else stays in our 3 wallets.</div>
+    <div class="act"><span class="lbl">1. Share bitcoin</span>
+      from <select id="sFrom"></select> to <select id="sTo"></select>
+      <input type="number" id="sAmt" value="30000" step="1000" min="1000" max="60000"> sats
+      <button onclick="ask('send_btc')">Send…</button></div>
+    <div class="act"><span class="lbl">2. Prepare RGB slots</span>
+      in <select id="uW"></select> make <input type="number" id="uNum" value="3" min="1" max="5"> slots of
+      <input type="number" id="uSize" value="1500" step="100"> sats
+      <button onclick="ask('create_utxos')">Prepare…</button>
+      <div class="explain">RGB tokens live on small bitcoin outputs ("slots"). The sats in a slot stay in the same wallet.</div></div>
+    <div class="act"><span class="lbl">3. Create demo stablecoin</span>
+      issue <input type="number" id="iAmt" value="10000" step="1000"> tUSDT in the issuer wallet
+      <button onclick="ask('issue_usd')">Issue…</button>
+      <div class="explain">Free: issuing a token costs no bitcoin. Skipped if KaleidoSwap's test USDT is used instead.</div></div>
+    <div class="act"><span class="lbl">4. Send stablecoin</span>
+      from <select id="tFrom"></select> to <select id="tTo"></select>
+      <input type="number" id="tAmt" value="2000" step="100"> tUSDT
+      <button onclick="ask('send_usd')">Send…</button></div>
+    <div class="msg" id="msg"></div>
+  </div>
+</main>
+
+<div class="confirm" id="confirm"><div class="box">
+  <div class="big" id="cTitle"></div>
+  <div id="cBody" style="margin-top:8px"></div>
+  <div class="row"><button class="yes" id="cYes">Confirm</button><button class="no" onclick="closeC()">Cancel</button></div>
+</div></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+let W = null, busy = false;
+
+async function load(sync) {
+  try {
+    const r = await (await fetch("/api/wallets" + (sync ? "?sync=1" : ""))).json();
+    if (!r.real) { $("notReal").style.display = "block"; return; }
+    W = r; render();
+  } catch (e) { $("msg").textContent = "Could not load wallets: " + e.message; }
+}
+function render() {
+  const ws = W.wallets;
+  const tot = ws.reduce((s, w) => s + w.btc.spendable + w.btc.colored, 0);
+  const inc = ws.reduce((s, w) => s + (w.btc.future - w.btc.spendable) + (w.btc.colored_future - w.btc.colored), 0);
+  $("total").innerHTML = `<div><div class="dim">Total test bitcoin in our 3 wallets</div><div class="n">${fmt(tot)} sats</div></div>` +
+    (inc ? `<div><div class="dim">On the way (unconfirmed)</div><div class="n wait">${inc > 0 ? "+" : ""}${fmt(inc)} sats</div></div>` : "") +
+    `<div><div class="dim">Fee rate</div><div class="n">${W.fee_rate} sat/vB</div></div>`;
+  const role = { issuer: "Stablecoin issuer · received the faucet sats", tenant: "Tenant · issues the approval token, pays the deposit", landlord: "Landlord · receives approval and deposit" };
+  $("grid").innerHTML = ws.map((w) => `<div class="w">
+    <h2>${w.name}</h2><div class="dim">${role[w.name] || ""}</div>
+    <div class="addr"><a href="${W.explorer}/address/${w.address}" target="_blank" rel="noopener">${w.address}</a></div>
+    <div class="bal">
+      <span>Spendable bitcoin</span><span class="v big">${fmt(w.btc.spendable)}</span>
+      <span>In RGB slots</span><span class="v">${fmt(w.btc.colored)}</span>
+      <span>RGB slots (free / total)</span><span class="v">${w.rgb_slots_free ?? "?"} / ${w.rgb_slots ?? "?"}</span>
+      ${w.btc.future !== w.btc.spendable ? `<span>Incoming</span><span class="v wait">${fmt(w.btc.future - w.btc.spendable)}</span>` : ""}
+    </div>
+    <div class="sec"><h3>RGB assets</h3>${w.assets.length ? w.assets.map((a) =>
+      `<span class="pill" title="${a.id}">${a.ticker} · ${fmt(a.settled)}${a.future !== a.settled ? ` <span class="wait">(→ ${fmt(a.future)})</span>` : ""}</span>`).join("") : '<span class="dim">none yet</span>'}</div>
+    <div class="sec"><h3>Recent bitcoin transactions</h3>${w.txs.length ? w.txs.map((t) => {
+      const net = t.received - t.sent;
+      return `<div class="tx"><a href="${W.explorer}/tx/${t.txid}" target="_blank" rel="noopener">${t.txid.slice(0, 10)}…</a>
+        <span class="${net >= 0 ? "plus" : "minus"}">${net >= 0 ? "+" : ""}${fmt(net)}</span>
+        <span class="${t.confirmed ? "" : "wait"}">${t.confirmed ? "confirmed" : "pending"}</span></div>`; }).join("") : '<span class="dim">none</span>'}</div>
+  </div>`).join("");
+  const opts = ws.map((w) => `<option>${w.name}</option>`).join("");
+  for (const id of ["sFrom", "sTo", "uW", "tFrom", "tTo"]) { const el = $(id); const v = el.value; el.innerHTML = opts; if (v) el.value = v; }
+  if (!$("sTo").dataset.init) { $("sTo").value = "tenant"; $("tFrom").value = "issuer"; $("tTo").value = "tenant"; $("sTo").dataset.init = 1; }
+}
+
+function ask(action) {
+  if (!W) return;
+  const fee = (vb) => `about ${fmt(vb * W.fee_rate)} sats network fee`;
+  let title, body, payload;
+  if (action === "send_btc") {
+    const a = +$("sAmt").value; payload = { action, from: $("sFrom").value, to: $("sTo").value, amount: a };
+    title = `Send ${fmt(a)} sats`; body = `From <b>${payload.from}</b> to <b>${payload.to}</b> (both our wallets).<br>Cost: ${fee(160)}.`;
+  } else if (action === "create_utxos") {
+    const n = +$("uNum").value, s = +$("uSize").value; payload = { action, wallet: $("uW").value, num: n, size: s };
+    title = `Prepare ${n} RGB slots in ${payload.wallet}`; body = `Moves ${fmt(n * s)} sats into ${n} slots inside the same wallet.<br>Cost: ${fee(100 + 45 * n)}.`;
+  } else if (action === "issue_usd") {
+    const a = +$("iAmt").value; payload = { action, amount: a };
+    title = `Issue ${fmt(a)} tUSDT`; body = `Creates a demo stablecoin in the issuer wallet. Uses one free RGB slot.<br>Cost: no bitcoin.`;
+  } else if (action === "send_usd") {
+    const a = +$("tAmt").value; payload = { action, from: $("tFrom").value, to: $("tTo").value, amount: a };
+    title = `Send ${fmt(a)} tUSDT`; body = `From <b>${payload.from}</b> to <b>${payload.to}</b> as an RGB transfer on Bitcoin.<br>Needs a free RGB slot in ${payload.to}. Cost: ${fee(200)}.`;
+  }
+  $("cTitle").textContent = title; $("cBody").innerHTML = body;
+  $("cYes").onclick = () => run(payload);
+  $("confirm").style.display = "grid";
+}
+function closeC() { $("confirm").style.display = "none"; }
+async function run(payload) {
+  closeC(); if (busy) return; busy = true;
+  $("msg").innerHTML = '<span class="wait">Working…</span>';
+  try {
+    const r = await fetch("/api/wallets/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    $("msg").innerHTML = '<span class="plus">Done.</span> ' + (j.link ? `<a href="${j.link}" target="_blank" rel="noopener">view transaction</a> · confirms in about 30 s` :
+      j.created !== undefined ? `${j.created} slots created, confirms in about 30 s` : j.asset_id ? `asset ${j.asset_id}` : "");
+  } catch (e) { $("msg").innerHTML = '<span class="minus">Error:</span> ' + e.message; }
+  busy = false; setTimeout(load, 1500);
+}
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>

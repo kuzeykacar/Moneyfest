@@ -1,0 +1,10 @@
+data/
+build/
+node_modules/
+.venv/
+.rgb-venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+*.mnemonic
