@@ -26,11 +26,13 @@ def _ask_model(system_prompt, user_text):
     """Send one prompt to the local QVAC server and return its text answer."""
     body = {"model": QVAC_MODEL, "temperature": 0,
             "messages": [{"role": "system", "content": system_prompt},
-                         {"role": "user", "content": user_text}]}
+                         {"role": "user", "content": user_text + " /no_think"}]}
     req = urllib.request.Request(QVAC_URL, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=120) as resp:
-        return json.load(resp)["choices"][0]["message"]["content"]
+        text = json.load(resp)["choices"][0]["message"]["content"]
+    # Qwen models may "think out loud" inside <think> tags: keep only the final answer.
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
 
 def _json_from(text):
