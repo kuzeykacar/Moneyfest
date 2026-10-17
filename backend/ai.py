@@ -84,6 +84,38 @@ def _fake_parse_rules(text):
 
 
 # ---------------------------------------------------------------------------
+# 1b. Commands: "pay netflix 10 euros" -> {"action": "pay", "to": "Netflix", "amount": 10}
+
+COMMAND_PROMPT = """You turn one money instruction into JSON. Reply with JSON only.
+Format: {"action": "pay" | "income" | "sweep" | "unknown", "to": "who gets paid", "amount": number}
+- "pay": the person wants to pay a shop, a service, a subscription or a friend.
+- "income": the person received money.
+- "sweep": the person wants to move leftovers to savings.
+- "unknown": anything else, or if the amount is missing.
+Amounts are plain numbers in dollars or euros as written (10 euros = 10). Leave out fields you do not know."""
+
+
+def parse_command(text):
+    if USE_FAKE:
+        return _fake_parse_command(text)
+    return _ask_model(COMMAND_PROMPT, text)
+
+
+def _fake_parse_command(text):
+    t = text.lower().strip()
+    amount = re.search(r"(\d+(?:[.,]\d+)?)", t)
+    amount = float(amount.group(1).replace(",", ".")) if amount else None
+    if any(w in t for w in ("sweep", "savings", "save leftovers")):
+        return {"action": "sweep"}
+    if any(w in t for w in ("received", "got paid", "income", "salary")):
+        return {"action": "income", "amount": amount} if amount else {"action": "unknown"}
+    m = re.search(r"(?:pay|send|give)\s+(?:to\s+)?([a-z][\w' ]*?)\s+\d", t)
+    if m and amount:
+        return {"action": "pay", "to": m.group(1).strip().title(), "amount": amount}
+    return {"action": "unknown"}
+
+
+# ---------------------------------------------------------------------------
 # 2. Payments: "Esselunga" -> {"category": "food", "reason": "..."}
 
 CLASSIFY_PROMPT = """You sort one payment into a budget category. Reply with JSON only.

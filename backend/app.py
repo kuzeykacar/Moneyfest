@@ -39,6 +39,7 @@ def cents(value):
 
 # Each route reads a JSON body and returns a JSON-able result.
 ROUTES = {
+    "/api/command": lambda b: app.command(b["text"]),
     "/api/rules": lambda b: app.set_rules(b["text"]),
     "/api/income": lambda b: app.receive_income(cents(b["amount"])),
     "/api/pay": lambda b: app.pay(b["merchant"], cents(b["amount"])),

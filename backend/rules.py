@@ -49,6 +49,33 @@ class Moneyfest:
         self._log("rules", f"Rules updated from: “{text}”", {"parsed": clean})
         return clean
 
+    # --------------------------------------------------------------- command
+    def command(self, text):
+        """One sentence from the prompt box -> a real action.
+
+        The AI only reads the sentence. This code checks the answer, then the
+        same rules as the buttons decide: budgets, subscription checks, approvals.
+        """
+        proposal = self.ai.parse_command(text)
+        action = proposal.get("action")
+        amount = proposal.get("amount")
+        amount = round(float(amount) * 100) if isinstance(amount, (int, float)) and amount > 0 else None
+        to = str(proposal.get("to") or "").strip()[:60]
+
+        if action == "pay" and to and amount:
+            self._log("command", f"You said: “{text}”", {"parsed": proposal})
+            known = {name.lower(): name for name in self.usage}
+            if to.lower() in known:  # a subscription we track -> pay from the subscriptions wallet
+                return self.subscription_due(known[to.lower()], amount)
+            return self.pay(to, amount)
+        if action == "income" and amount:
+            self._log("command", f"You said: “{text}”", {"parsed": proposal})
+            return self.receive_income(amount)
+        if action == "sweep":
+            self._log("command", f"You said: “{text}”", {"parsed": proposal})
+            return self.sweep()
+        raise ValueError("I didn't understand that. Try: “pay Netflix 10” or “pay Esselunga 12.40”.")
+
     # ---------------------------------------------------------------- income
     def receive_income(self, amount):
         """Income lands in the spending wallet; the subscriptions budget moves to its own wallet."""
