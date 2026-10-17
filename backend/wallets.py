@@ -85,17 +85,7 @@ class FakeWallets(Wallets):
                 self.balances[t["to"]] += t["amount"]
 
 
-class RgbWallets(Wallets):
-    """Real RGB wallets on Mutinynet: one RGB Lightning Node per role, started with kaleido-cli.
-
-    TODO (RGB person + Claude, once the nodes run):
-      - one node per name in WALLET_NAMES, each on its own port (see `kaleido node list`)
-      - issue():   POST /issueassetnia on the NGO node
-      - send():    receiver node POST /rgbinvoice -> sender node sends to that invoice
-                   -> both nodes POST /refreshtransfers until Settled
-      - balance(): POST /assetbalance with the asset id
-    API reference (Swagger): https://rgb-tools.github.io/rgb-lightning-node
-    """
-
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError("RgbWallets is not written yet; run with MONEYFEST_WALLETS=fake")
+def RgbWallets(*args, **kwargs):
+    """Real RGB wallets on Mutinynet (rgb-lib). Imported lazily so fake mode needs no rgb-lib."""
+    from rgb_wallets import RgbWallets as _Real
+    return _Real(*args, **kwargs)
