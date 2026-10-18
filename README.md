@@ -86,7 +86,7 @@ To rent a room, tenants send strangers their **ID card, payslips, bank statement
 - **Approval token:** an RGB **UDA** (unique digital asset) issued by the tenant's wallet; its media is the ZK proof, so the RGB contract commits to the proof's hash. Sent **on-chain** to the landlord.
 - **Why RGB:** the approval has one owner, can't be duplicated or quietly sent to many landlords, has a Bitcoin timestamp, and is validated client-side by the receiver. Nothing private is published on the chain.
 - **Deposit:** an RGB **NIA** stablecoin (`TUSDT`, our test token) from tenant to landlord after approval, the "agentic dollars" part: the landlord's assistant requests it, the tenant confirms.
-- **Credentials as RGB tokens** ("coming next" mode, `/issuer.html`): issuers can send signed data cards straight into the tenant's RGB wallet, so no PDF is needed.
+- **Future idea, prototyped on-chain:** issuers send signed data cards straight into the tenant's RGB wallet, so no PDF is needed. Removed from the app to keep the demo focused; design note in [keyproof/docs/FUTURE_issuer_credentials.md](keyproof/docs/FUTURE_issuer_credentials.md).
 - **Stack:** `rgb-lib` 0.3.0b7 (Python), **Mutinynet** (Bitcoin signet, ~30 s blocks), KaleidoSwap's Mutinynet indexer `esplora.signet.kaleidoswap.com` and RGB proxy `proxy.kaleidoswap.com`. No Docker.
 
 ### QVAC local AI (required)
@@ -122,7 +122,7 @@ Runs **Qwen3.5 4B** (Q4_K_M) locally through `@qvac/cli` (OpenAI-compatible API 
 
 | Point | Where in KeyProof |
 |---|---|
-| **RGB (required)** | Approval token (UDA carrying the ZK proof) and stablecoin deposit (NIA), both **settled on Bitcoin Mutinynet**; issuer credentials as RGB tokens; wallet page with balances and transactions ([section 8](#8-proof-it-works-transactions-and-tests)) |
+| **RGB (required)** | Approval token (UDA carrying the ZK proof) and stablecoin deposit (NIA), both **settled on Bitcoin Mutinynet**; wallet page with balances and transactions ([section 8](#8-proof-it-works-transactions-and-tests)) |
 | **QVAC (required)** | Local Qwen3.5 4B on both sides: the landlord form from free text (EN/IT/TR), and reading the tenant's private documents **on the device**; benchmarked; with fallbacks |
 | **Tether WDK (bonus)** | The tenant's self-custodial wallet built on `@utexo/wdk-wallet-rgb`, live on the test network inside the app |
 | **Agentic dollars** | The landlord's assistant requests the deposit after a valid proof; the tenant confirms; a stablecoin moves on RGB. No human handles documents, the AI never decides money or approval |
@@ -172,7 +172,7 @@ The real documents stay on our machine; they are **not** in this repo.
 | Test bitcoin from the faucet to our issuer wallet | [3243ddff…](https://mutinynet.com/tx/3243ddffd988652ca382ccd073bc33349468d0b382926b305f962b56825c7cf0) |
 | Bitcoin shared with the landlord wallet | [87f3ce7a…](https://mutinynet.com/tx/87f3ce7af2fc8dde3d9b446ec3f8811f7f3de9d6e98c1d72a0bf42dd4fedb6ff) |
 | 2,000 TUSDT (RGB stablecoin) to the tenant | [a255bf90…](https://mutinynet.com/tx/a255bf90c14c688ae80d1fa37e9e6bdd35109d49a3a3188629036778a22514a5) |
-| 3 credentials as RGB tokens, issuers → tenant, one transaction | [fa94519c…](https://mutinynet.com/tx/fa94519c3b22f806f26c751851ccf4eb1b093a5817d26ba79bfb50f29e1616a5) |
+| 3 credentials as RGB tokens, issuers → tenant, one transaction (prototype of the future idea, see `keyproof/docs/FUTURE_issuer_credentials.md`) | [fa94519c…](https://mutinynet.com/tx/fa94519c3b22f806f26c751851ccf4eb1b093a5817d26ba79bfb50f29e1616a5) |
 | **Approval token (RGB UDA with the ZK proof), tenant → landlord** | [01bc272e…](https://mutinynet.com/tx/01bc272eb2a29629ac95907cca4377dcdf17f83af8d793ecd02324b69daa6655) |
 | **Deposit 1,100 TUSDT, tenant → landlord** | [899d3dc8…](https://mutinynet.com/tx/899d3dc81d352a13112b651381921eeb1b1f4fb7f9d3210bcf1811b8b66e83ba) |
 
@@ -237,9 +237,8 @@ Without the AI running, documents are read with simple rules instead, and the sc
 | `/a/CODE` | Tenant link for an application |
 | `/receipt.html` | Printable receipt |
 | `/verify.html` | Standalone proof verifier |
-| `/admin.html` (host only) | Wallets, issuer, developer view, start over, presenter mode |
+| `/admin.html` (host only) | Wallets, developer view, start over, presenter mode |
 | `/wallets.html` (host only) | RGB wallets: balances, assets, transactions, actions with confirmation |
-| `/issuer.html` (host only) | Issuers send credentials as RGB tokens |
 | `/dev.html` (host only) | Developer view: both sides on one page |
 
 ### Developers
@@ -283,6 +282,7 @@ All demo people are fictional (Elena Rossi, Marco Rossi); all demo issuers are o
 | QVAC local AI on both sides | Deposit fully through the WDK wallet |
 | Tether WDK self-custodial tenant wallet | Multi-party trusted setup, revocation (OCSP/CRL), hosted HTTPS |
 | Phone QR, receipts, EN/IT/TR, admin page | Accounts, multiple listings and applicants, persistence |
+| | Issuers send credentials straight to the tenant's wallet as RGB tokens (prototyped, see `keyproof/docs/FUTURE_issuer_credentials.md`) |
 
 ## 12. Repository map
 
@@ -295,13 +295,13 @@ All demo people are fictional (Elena Rossi, Marco Rossi); all demo issuers are o
 | `keyproof/keyproof/rgb.py`, `rgb_setup.py` | RGB wallets with rgb-lib (real) and a simulated version |
 | `keyproof/keyproof/make_*.py` | Demo issuers and signed documents |
 | `keyproof/circuits/keyproof.circom` | The ZK circuit |
-| `keyproof/web/` | Pages (`index`, `landlord`, `tenant`, `receipt`, `verify`, `admin`, `wallets`, `issuer`, `dev`), design (`simple.css`/`simple.js`), `zk/` (snarkjs, circuit wasm, proving key, verification key, trusted issuers) |
+| `keyproof/web/` | Pages (`index`, `landlord`, `tenant`, `receipt`, `verify`, `admin`, `wallets`, `dev`), design (`simple.css`/`simple.js`), `zk/` (snarkjs, circuit wasm, proving key, verification key, trusted issuers) |
 | `keyproof/wdk/` | Tether WDK tenant wallet: check script and local service |
 | `keyproof/demo_docs/`, `keyproof/real_docs/` | Signed demo documents, edited copies, untrusted-signer copies |
 | `keyproof/trust/` | Trust root and issuer certificates (public) |
 | `keyproof/tools/` | ZK setup, verifier builder, AI benchmark and document test, browser end-to-end tests |
 | `keyproof/scripts/` | Double-click scripts: setup, run (demo/real), restart, AI, WDK, wallets |
-| `keyproof/docs/` | Pitch and jury Q&A, standalone verifier |
+| `keyproof/docs/` | Pitch and jury Q&A, standalone verifier, future-idea notes |
 | `scripts/` | QVAC install (`setup_ai.command`), shared by both projects |
 | `backend/`, `web/` | *Moneyfest Aid*, an earlier prototype from the same hackathon |
 

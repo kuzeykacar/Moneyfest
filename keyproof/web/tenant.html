@@ -92,7 +92,7 @@ function screenDocs() {
             ${rej}${aiSummary()}<div class="items">${rows}</div>
             ${extraDocs()}${realDocs()}
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
-          ${KP.wdkCard()}<div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
+          ${KP.wdkCard()}`;
 }
 
 function aiSummary() {
@@ -242,29 +242,9 @@ function bind() {
   document.querySelectorAll("[data-sample]").forEach((el) => (el.onclick = async () => handleUpload(await api("/api/tenant/sample", { name: KP.SAMPLE[el.dataset.sample] }))));
 }
 
-// credentials that arrived in the tenant's RGB wallet
-async function fillWallet() {
-  const box = $("walletList"); if (!box) return;
-  const w = await api("/api/tenant/wallet").catch(() => ({ credentials: [] }));
-  if (!$("walletList")) return;
-  const iss = S.issuer;
-  const creds = w.credentials || [];
-  if (!creds.length) {
-    box.innerHTML = iss && iss.status !== "settled" ? `<div class="notice wait"><span class="spinner"></span> ${t("wallet_arriving")}</div>` : `<p class="dim">${t("wallet_none")}</p>`;
-    return;
-  }
-  const need = needed();
-  box.innerHTML = creds.map((c) => `<div class="item"><div class="icon ${c.ok ? "ok" : "bad"}">${KP.icon(c.ok ? "shield" : "x")}</div><div class="body">
-      <div class="title">${esc(c.label)}</div><div class="dim small">${esc(c.issuer || "")}</div>
-      <div class="small ${c.ok ? "okText" : "dim"}">${c.ok ? esc(t("original", { issuer: c.issuer })) : esc((c.checks.find((x) => !x.ok) || {}).detail || "")}</div></div></div>`).join("")
-    + (need.every((s) => S.tenant.docs[s] && S.tenant.docs[s].ok) ? "" : `<button class="btn ok block" id="useWallet" style="margin-top:10px">${t("wallet_use")}</button>`)
-    ;
-  const u = $("useWallet"); if (u) u.onclick = async () => { await api("/api/tenant/use_wallet", {}); refresh(true); };
-}
-
 // assistant texts (local AI), loaded after the screen is shown
 async function fillHelpers() {
-  fillWallet(); KP.fillWdk();
+  KP.fillWdk();
   if ($("help1") && S.request) {
     const r = S.request.rules;
     const h = await KP.explain("request", { items: KP.reqs(r).map((x) => x.text) }, "req" + r.requestId);
@@ -283,8 +263,7 @@ function render(force) {
   codeError = !!code && !valid;
   const v = !valid ? 0 : S.tenant.approval ? 4 : view;
   const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(), Object.values(S.tenant.docs).map((d) => d.ai && d.ai.status), (S.tenant.real || []).map((d) => d.file + (d.ai && d.ai.status)),
-    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError, payError,
-    S.issuer && S.issuer.status]);
+    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError, payError]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
   const finished = v === 4 && S.tenant.deposit && S.tenant.deposit.status === "settled";

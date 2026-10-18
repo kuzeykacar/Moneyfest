@@ -15,14 +15,13 @@
       <div class="item"><div class="icon" id="i1"></div><div class="body"><div class="title">Phone address</div>
         <div class="dim small">Phones on the same Wi-Fi open tenant links at <code id="base">…</code></div></div></div>
       <div class="item"><div class="icon" id="i2"></div><div class="body"><div class="title">Sample signed documents</div>
-        <div class="dim small">Drag them from the <code>keyproof/demo_docs</code> folder onto the tenant screen. The file ending in <code>_EDITED</code> is the tampered one (income changed from 1,650 to 2,650).</div></div></div>
+        <div class="dim small">Drag them from the <code>keyproof/demo_docs</code> folder onto the tenant screen. Files ending in <code>_EDITED</code> were changed after signing and are rejected; <code>keyproof/real_docs</code> has documents signed by untrusted keys.</div></div></div>
       <label class="toggle"><input type="checkbox" id="presenter"><div><div class="title">Presenter mode</div>
         <div class="dim small">Shows a “Use sample” button next to each document on the tenant screen (this browser only). Backup if drag-and-drop fails during the pitch.</div></div></label>
     </div>
     <div class="card"><h2>Tools</h2>
       <div class="row">
         <a class="btn secondary" href="/wallets.html">Wallets</a>
-        <a class="btn secondary" href="/issuer.html">Issuer: send credentials</a>
         <a class="btn secondary" href="/dev.html">Developer view</a>
         <button class="btn" id="reset">Start over (clear request)</button>
       </div>

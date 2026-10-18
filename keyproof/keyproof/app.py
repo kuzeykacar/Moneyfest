@@ -90,7 +90,7 @@ def _own_ips():
 
 
 # Other devices (phones) may only use the tenant side. Wallets, landlord, issuer, reset stay on this Mac.
-REMOTE_GET_BLOCK = ("/admin.html", "/wallets.html", "/dev.html", "/issuer.html", "/landlord.html", "/api/wallets",
+REMOTE_GET_BLOCK = ("/admin.html", "/wallets.html", "/dev.html", "/landlord.html", "/api/wallets",
                     "/api/landlord/", "/api/ping")
 REMOTE_POST_OK = ("/api/ai/explain", "/api/tenant/")
 TODAY = os.environ.get("KEYPROOF_TODAY", "2026-10-18")
@@ -124,7 +124,6 @@ class Demo:
         self.reset()
 
     def reset(self):
-        self.issuer = getattr(self, "issuer", None)   # credentials stay in the wallet across demo resets
         self.request = None
         self.tenant = {"docs": {}, "log": [], "approval": None, "deposit": None, "pending_payment": None}
         self.landlord = {"log": [], "result": None, "deposit": None, "seen": None}
@@ -280,57 +279,6 @@ class Demo:
             add(False, f"Name '{a['name']}' differs from your ID ('{id_name}').")
         return {"ok": ok, "notes": notes}
 
-    # ------------------------------------------------------------- credentials via RGB ("future" mode)
-    ISSUER_FILES = {1: ("comune", "Identity credential"), 2: ("bank", "Income credential"),
-                    3: ("poli", "Enrolment credential"), 4: ("bank", "Savings credential"),
-                    5: ("bank", "Guarantor credential")}
-    DEMO_PDF = {1: "1_Identity_codice_fiscale_Elena_Rossi.pdf", 2: "2_Income_statement_Elena_Rossi.pdf", 3: "3_Enrolment_certificate_Elena_Rossi.pdf", 4: "4_Balance_certificate_Elena_Rossi.pdf", 5: "5_Guarantor_income_Marco_Rossi.pdf"}
-
-    def issuer_send(self, types):
-        """Issuers send the tenant's signed data cards straight to the tenant's RGB wallet."""
-        creds = []
-        for t in types:
-            key, label = self.ISSUER_FILES[t]
-            card = pdfsig.read_card(open(os.path.join(ROOT, "demo_docs", self.DEMO_PDF[t]), "rb").read())
-            cert_pem = open(os.path.join(ROOT, "trust", "issuers", key + ".pem")).read()
-            payload = json.dumps({"kind": "KeyProof credential", "label": label, "card": card,
-                                  "issuer_cert": cert_pem}, separators=(",", ":")).encode()
-            creds.append((label, payload))
-        ids, tid = self.rgb.send_credentials(creds)
-        self.issuer = {"assets": ids, "tid": tid, "status": "settling", "labels": [c[0] for c in creds]}
-        self.log("tenant", f"Issuers sent {len(ids)} signed credentials to my RGB wallet.", self.rgb.link(tid))
-        return self.issuer
-
-    def wallet_credentials(self):
-        """What the tenant's RGB wallet holds, each checked like a PDF: 4 checks."""
-        out = []
-        for c in self.rgb.tenant_credentials():
-            try:
-                payload = json.loads(c["media"])
-                r = pdfsig.verify_credential(payload["card"], payload["issuer_cert"], self.root, self.revoked)
-                r["label"] = payload.get("label")
-            except Exception as e:
-                r = {"ok": False, "checks": [{"check": "not changed", "ok": False, "detail": f"unreadable ({e})"}],
-                     "issuer": None, "card": None, "label": "credential"}
-            if not c.get("digest_ok", True):
-                r["ok"] = False
-                r["checks"].insert(0, {"check": "not changed", "ok": False, "detail": "does not match the RGB contract"})
-            r["asset_id"] = c["asset_id"]
-            out.append(r)
-        return out
-
-    def use_wallet(self):
-        used = 0
-        for r in self.wallet_credentials():
-            if r["ok"]:
-                slot = SLOT_OF_TYPE[r["card"]["type"]]
-                self.tenant["docs"][slot] = {"file": r["label"] + " (RGB wallet)", "ok": True, "checks": r["checks"],
-                                             "issuer": r["issuer"], "slot": slot, "card": r["card"],
-                                             "source": "wallet", "asset_id": r["asset_id"]}
-                used += 1
-        self.log("tenant", f"Using {used} credentials from my RGB wallet.")
-        return {"used": used}
-
     def send_approval(self, proof, public_signals):
         req = self.request
         body = json.dumps({"proof": proof, "publicSignals": public_signals, "requestId": req["rules"]["requestId"]},
@@ -368,14 +316,6 @@ class Demo:
         self.log("tenant", f"Paid the deposit: {p['amount']} tUSDT (RGB, on-chain).", self.rgb.link(tid))
         return self.tenant["deposit"]
 
-    def _issuer_state(self):
-        i = getattr(self, "issuer", None)
-        if i and i["status"] != "settled":
-            i["status"] = self.rgb.status(i["tid"])
-            if i["status"] == "settled":
-                self.log("tenant", "The credentials arrived in my RGB wallet.")
-        return i
-
     # ------------------------------------------------------------- state
     def state(self):
         appr = self.tenant.get("approval")
@@ -406,7 +346,6 @@ class Demo:
                          "deposit": self.landlord["deposit"]},
             "balances": self.rgb.balances(),
             "trusted": self.trusted,
-            "issuer": self._issuer_state(),
             "share_base": f"http://{lan_ip()}:{PORT}",
         }
 
@@ -495,10 +434,6 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, json.load(r))
             except Exception as e:
                 return self._send(200, {"ok": False, "error": f"WDK wallet service not running ({type(e).__name__})"})
-        if path == "/api/tenant/wallet":
-            with DEMO.lock:
-                return self._send(200, {"credentials": [{k: v for k, v in c.items() if k != "card"} | {"type": c["card"]["type"] if c.get("card") else None}
-                                                         for c in DEMO.wallet_credentials()]})
         if path == "/api/landlord/inbox":
             with DEMO.lock:
                 return self._send(200, DEMO.inbox())
@@ -548,12 +483,8 @@ class Handler(BaseHTTPRequestHandler):
                 elif path == "/api/tenant/sample":
                     name = os.path.basename(body["name"])
                     out = DEMO.upload(name, open(os.path.join(ROOT, "demo_docs", name), "rb").read())
-                elif path == "/api/issuer/send":
-                    out = DEMO.issuer_send([int(x) for x in body.get("types", [1, 2, 3, 4, 5])])
                 elif path == "/api/tenant/remove":
                     out = DEMO.remove_doc(body.get("slot"), body.get("file"))
-                elif path == "/api/tenant/use_wallet":
-                    out = DEMO.use_wallet()
                 elif path == "/api/tenant/send":
                     out = DEMO.send_approval(body["proof"], body["publicSignals"])
                 elif path == "/api/tenant/pay":
