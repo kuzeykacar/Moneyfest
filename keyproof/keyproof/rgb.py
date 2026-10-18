@@ -44,6 +44,8 @@ class FakeRgb:
                 t["status"] = "settled"
                 if t["kind"] == "token":
                     self.tokens[t["asset"]]["owner"] = t["to"]
+                elif t["kind"] == "creds":
+                    pass
                 else:
                     self.usd[t["to"]] += t["amount"]
 
@@ -86,6 +88,30 @@ class FakeRgb:
     def balances(self):
         self._tick()
         return {"tenant": self.usd["tenant"], "landlord": self.usd["landlord"]}
+
+    def send_credentials(self, creds):
+        """creds: list of (name, media_bytes). Issuer wallet -> tenant wallet, one transaction."""
+        self.n += 1
+        tid = f"fake-tx-{self.n}"
+        ids = []
+        for name, media in creds:
+            self.n += 1
+            aid = f"rgb:fake-credential-{self.n}"
+            self.tokens[aid] = {"owner": "issuer", "media": media, "details": {"name": name}, "kind": "cred",
+                                "digest": hashlib.sha256(media).hexdigest()}
+            ids.append(aid)
+        self.transfers[tid] = {"kind": "creds", "assets": ids, "to": "tenant",
+                               "at": time.time() + self.settle, "status": "settling"}
+        return ids, tid
+
+    def tenant_credentials(self):
+        self._tick()
+        for t in self.transfers.values():
+            if t.get("kind") == "creds" and t["status"] == "settled":
+                for a in t["assets"]:
+                    self.tokens[a]["owner"] = "tenant"
+        return [{"asset_id": a, "media": t["media"], "digest_ok": True}
+                for a, t in self.tokens.items() if t.get("kind") == "cred" and t["owner"] == "tenant"]
 
     def link(self, tid):
         return None
@@ -238,6 +264,51 @@ class RealRgb:
                         data = f.read()
                     return {"media": data, "digest": media.digest, "details": json.loads(a.details or "{}")}
         return None
+
+    def send_credentials(self, creds):
+        """The issuer wallet (standing in for bank / comune / university) issues one unique RGB token per
+        credential, with the signed data card as its media, and sends them all to the tenant in ONE transaction."""
+        R = self.R
+        media_dir = os.path.join(ROOT, "credentials")
+        os.makedirs(media_dir, exist_ok=True)
+        expiry = int(time.time()) + 3600
+        with self.lock:
+            iss, ten = self.nodes["issuer"], self.nodes["tenant"]
+            ids, recipient_map, recips = [], {}, []
+            for name, media in creds:
+                path = os.path.join(media_dir, hashlib.sha256(media).hexdigest()[:16] + ".json")
+                with open(path, "wb") as f:
+                    f.write(media)
+                a = iss["wallet"].issue_asset_uda("KPCRED", name, json.dumps({"app": "KeyProof credential"}), 0, path, [])
+                rd = ten["wallet"].blind_receive(None, R.Assignment.ANY(), expiry, [self.proxy], 1)
+                recipient_map[a.asset_id] = [R.Recipient(recipient_id=rd.recipient_id, witness_data=None,
+                                                         assignment=R.Assignment.NON_FUNGIBLE(),
+                                                         transport_endpoints=[self.proxy])]
+                ids.append(a.asset_id)
+                recips.append(rd.recipient_id)
+            res = iss["wallet"].send(iss["online"], recipient_map, False, self.fee, 1, expiry)
+            for aid, rid in zip(ids, recips):
+                self.transfers.setdefault(res.txid + ":" + aid, {"to": "tenant", "asset": aid, "recipient_id": rid})
+            self.transfers[res.txid] = {"to": "tenant", "asset": ids[0], "recipient_id": recips[0]}
+        self.busy()
+        return ids, res.txid
+
+    def tenant_credentials(self):
+        """Credential tokens the tenant's wallet holds (only after rgb-lib validated them)."""
+        R = self.R
+        out = []
+        with self.lock:
+            w = self.nodes["tenant"]["wallet"]
+            for a in (w.list_assets([R.AssetSchema.UDA]).uda or []):
+                if a.ticker != "KPCRED" or a.balance.settled < 1:
+                    continue
+                media = a.media or (a.token.media if a.token else None)
+                if not media:
+                    continue
+                data = open(media.file_path, "rb").read()
+                out.append({"asset_id": a.asset_id, "media": data,
+                            "digest_ok": hashlib.sha256(data).hexdigest() == media.digest})
+        return out
 
     def balances(self):
         usd = self.state.get("usd_asset")

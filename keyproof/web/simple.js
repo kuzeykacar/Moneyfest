@@ -22,6 +22,11 @@
 
   const T = {
     en: {
+      wallet_title: "📥 In your wallet", wallet_text: "Official credentials your bank, comune and university sent straight to your wallet. No PDF needed.",
+      wallet_use: "Use these credentials", wallet_none: "Nothing in your wallet yet.", wallet_arriving: "Credentials are on their way to your wallet (about 1–2 minutes)…",
+      or_pdf: "Or add signed PDF documents:", issuer: "Issuer",
+      i_title: "Send official credentials", i_text: "Banca Demo, Demo Comune di Torino and Demo Politecnico send Elena's signed credentials straight to her wallet, on Bitcoin. In the future, this replaces PDF documents.",
+      i_send: "Send credentials to Elena's wallet", i_sending: "Sending…", i_sent: "Sent. They arrive in about 1–2 minutes.", i_done: "Delivered to Elena's wallet ✓",
       tenant: "Tenant", landlord: "Landlord", step: "Step {a} of {b}",
       t_wait_title: "Waiting for a landlord", t_wait_text: "When a landlord publishes what they need, it appears here.",
       t1_title: "The landlord would like to know", t1_next: "Continue",
@@ -61,6 +66,11 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      wallet_title: "📥 Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
+      wallet_use: "Usa queste credenziali", wallet_none: "Ancora niente nel portafoglio.", wallet_arriving: "Le credenziali stanno arrivando (circa 1–2 minuti)…",
+      or_pdf: "Oppure aggiungi documenti PDF firmati:", issuer: "Ente",
+      i_title: "Invia credenziali ufficiali", i_text: "Banca Demo, Demo Comune di Torino e Demo Politecnico inviano le credenziali firmate di Elena direttamente al suo portafoglio, su Bitcoin. In futuro sostituiscono i PDF.",
+      i_send: "Invia le credenziali a Elena", i_sending: "Invio…", i_sent: "Inviate. Arrivano in circa 1–2 minuti.", i_done: "Consegnate nel portafoglio di Elena ✓",
       tenant: "Inquilino", landlord: "Proprietario", step: "Passo {a} di {b}",
       t_wait_title: "In attesa di un proprietario", t_wait_text: "Quando un proprietario pubblica le sue richieste, appaiono qui.",
       t1_title: "Il proprietario vorrebbe sapere", t1_next: "Continua",
@@ -100,6 +110,11 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      wallet_title: "📥 Cüzdanınızda", wallet_text: "Bankanızın, belediyenin ve üniversitenizin doğrudan cüzdanınıza gönderdiği resmi belgeler. PDF gerekmez.",
+      wallet_use: "Bu belgeleri kullan", wallet_none: "Cüzdanınızda henüz bir şey yok.", wallet_arriving: "Belgeler cüzdanınıza geliyor (yaklaşık 1–2 dakika)…",
+      or_pdf: "Ya da imzalı PDF belgeleri ekleyin:", issuer: "Kurum",
+      i_title: "Resmi belgeleri gönder", i_text: "Banca Demo, Demo Torino Belediyesi ve Demo Politeknik, Elena'nın imzalı belgelerini Bitcoin üzerinden doğrudan cüzdanına gönderir. Gelecekte PDF'lerin yerini alır.",
+      i_send: "Belgeleri Elena'nın cüzdanına gönder", i_sending: "Gönderiliyor…", i_sent: "Gönderildi. Yaklaşık 1–2 dakikada ulaşır.", i_done: "Elena'nın cüzdanına ulaştı ✓",
       tenant: "Kiracı", landlord: "Ev sahibi", step: "Adım {a} / {b}",
       t_wait_title: "Ev sahibi bekleniyor", t_wait_text: "Bir ev sahibi isteklerini yayınladığında burada görünür.",
       t1_title: "Ev sahibi şunları bilmek istiyor", t1_next: "Devam et",

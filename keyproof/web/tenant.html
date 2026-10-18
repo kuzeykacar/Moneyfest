@@ -19,6 +19,7 @@
   <main id="main" aria-live="polite"></main>
   <footer class="foot">
     <a href="/landlord.html" id="fLandlord"></a>
+    <a href="/issuer.html" id="fIssuer">Issuer</a>
     <a href="/wallets.html" id="fWallets"></a>
     <a href="/dev.html" id="fDev"></a>
     <button id="fReset"></button>
@@ -91,7 +92,8 @@ function screenDocs() {
   }).join("");
   const rej = rejected ? `<div class="notice bad"><b>⛔ ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
                           <div id="helpRej">${KP.helperHtml(rejected.help, rejected.source)}</div>` : "";
-  return `<div class="card"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}${rows}
+  return `<div class="card" id="walletCard"><h2>${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>
+          <div class="card"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}${rows}
             <div class="row" style="margin-top:12px"><button class="btn link" id="fake">${t("try_fake")}</button></div>
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>`;
 }
@@ -184,8 +186,29 @@ function bind() {
   document.querySelectorAll("[data-sample]").forEach((el) => (el.onclick = async () => handleUpload(await api("/api/tenant/sample", { name: KP.SAMPLE[el.dataset.sample] }))));
 }
 
+// credentials that arrived in the tenant's RGB wallet
+async function fillWallet() {
+  const box = $("walletList"); if (!box) return;
+  const w = await api("/api/tenant/wallet").catch(() => ({ credentials: [] }));
+  if (!$("walletList")) return;
+  const iss = S.issuer;
+  const creds = w.credentials || [];
+  if (!creds.length) {
+    box.innerHTML = iss && iss.status !== "settled" ? `<div class="notice wait"><span class="spinner"></span> ${t("wallet_arriving")}</div>` : `<p class="dim">${t("wallet_none")}</p>`;
+    return;
+  }
+  const need = needed();
+  box.innerHTML = creds.map((c) => `<div class="item"><div class="icon ${c.ok ? "ok" : "bad"}">${c.ok ? "✓" : "✗"}</div><div class="body">
+      <div class="title">${esc(c.label)}</div><div class="dim small">${esc(c.issuer || "")}</div>
+      <div class="small ${c.ok ? "" : "dim"}">${c.ok ? "✓ " + esc(t("original", { issuer: c.issuer })) : esc((c.checks.find((x) => !x.ok) || {}).detail || "")}</div></div></div>`).join("")
+    + (need.every((s) => S.tenant.docs[s] && S.tenant.docs[s].ok) ? "" : `<button class="btn ok block" id="useWallet" style="margin-top:10px">${t("wallet_use")}</button>`)
+    + `<p class="dim small" style="margin-top:12px">${t("or_pdf")}</p>`;
+  const u = $("useWallet"); if (u) u.onclick = async () => { await api("/api/tenant/use_wallet", {}); refresh(true); };
+}
+
 // assistant texts (local AI), loaded after the screen is shown
 async function fillHelpers() {
+  fillWallet();
   if ($("help1") && S.request) {
     const r = S.request.rules;
     const h = await KP.explain("request", { items: KP.ticked(r).map((s) => KP.ruleText(s, r)) }, "req" + r.requestId);
@@ -202,7 +225,8 @@ function render(force) {
   if (S.request && seenRequest !== S.request.rules.requestId) { seenRequest = S.request.rules.requestId; view = 1; proof = null; proofError = null; rejected = null; }
   const v = !S.request ? 0 : S.tenant.approval ? 4 : view;
   const sig = JSON.stringify([v, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(),
-    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError]);
+    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError,
+    S.issuer && S.issuer.status]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
   $("main").innerHTML = v === 0 ? screenWaiting() : v === 1 ? screenRequest() : v === 2 ? screenDocs() : v === 3 ? screenProof() : screenAfter();

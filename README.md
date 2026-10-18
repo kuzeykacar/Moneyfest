@@ -145,6 +145,7 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | ZK circuit, trusted setup, browser proving and verifying | ✅ |
 | Local AI (QVAC, Qwen3.5 4B) filling the landlord form | ✅ 10/10 on our benchmark (keyword backup) |
 | Simple screens for tenant and landlord (one step at a time, big buttons, plain words, EN/IT/TR) | ✅ |
+| **Credentials as RGB tokens** ("future" mode): issuers send signed data cards straight to the tenant's RGB wallet in one transaction; the tenant checks them (issuer seal, trusted issuer, valid, right issuer) and uses them instead of PDFs | ✅ (`/issuer.html`) |
 | Local AI assistant texts: explains requests, rejections, results and the deposit in the user's language | ✅ |
 | Wallet page: balances, assets, transactions, every spend needs Confirm | ✅ |
 | Real RGB approval token + deposit on Mutinynet | ✅ |
