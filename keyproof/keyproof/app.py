@@ -214,6 +214,8 @@ class Demo:
             b = dt.date.fromisoformat(a["birth_date"]); today = dt.date.fromisoformat(rules.get("today", TODAY))
             age = today.year - b.year - ((today.month, today.day) < (b.month, b.day))
             add(age >= 18, f"Born {b.strftime('%d/%m/%Y')}: age {age}.")
+        if slot == "identity" and rules.get("sex") and a.get("sex"):
+            add(a["sex"] == rules["sex"], f"Sex on the document: {a['sex']} – the landlord asks for {rules['sex']}.")
         if slot == "occupation":
             kind = a.get("occupation")
             allowed = [k for k, v in (("student", rules.get("allowStudent")), ("employed", rules.get("allowEmployed"))) if v]
@@ -232,7 +234,7 @@ class Demo:
     ISSUER_FILES = {1: ("comune", "Identity credential"), 2: ("bank", "Income credential"),
                     3: ("poli", "Enrolment credential"), 4: ("bank", "Savings credential"),
                     5: ("bank", "Guarantor credential")}
-    DEMO_PDF = {1: "Certificato_anagrafico_Elena_Rossi.pdf", 2: "Income_statement_Elena_Rossi.pdf", 3: "Certificato_iscrizione_Elena_Rossi.pdf", 4: "Balance_certificate_Elena_Rossi.pdf", 5: "Guarantor_income_Marco_Rossi.pdf"}
+    DEMO_PDF = {1: "1_Identity_codice_fiscale_Elena_Rossi.pdf", 2: "2_Income_statement_Elena_Rossi.pdf", 3: "3_Enrolment_certificate_Elena_Rossi.pdf", 4: "4_Balance_certificate_Elena_Rossi.pdf", 5: "5_Guarantor_income_Marco_Rossi.pdf"}
 
     def issuer_send(self, types):
         """Issuers send the tenant's signed data cards straight to the tenant's RGB wallet."""

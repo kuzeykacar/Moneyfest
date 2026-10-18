@@ -159,6 +159,8 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | Printable receipt (`/receipt.html`): flat, requirements met, deposit, Bitcoin tx links, approval token, proof fingerprint | ✅ |
 | **Local AI on the tenant side (QVAC):** reads each uploaded PDF on the tenant's own device – what it is, issuer, name, amount, dates – and gives a private pre-check with advice (amount vs the landlord's minimum, age, document age, name matches the ID, enrolment lasts until the lease ends, AI label vs issuer-signed label). Advice only: the landlord relies on the signatures and the ZK proof. Test: `keyproof/scripts/test_ai_docs.command` | ✅ |
 | **Real official PDFs:** signature check now handles real issuers' RSA / SHA-2 signatures. Real documents from issuers not on the trust list (or unsigned, like Agenzia delle Entrate Entratel receipts) are accepted as "real documents": integrity shown, read by the local AI on the device, never used for the proof. Tested on a real Agenzia delle Entrate lease-registration receipt and a real UniCredit account statement (both read correctly in ~7.5 s). None of 5 real documents from 4 institutions (UniCredit, Agenzia delle Entrate, Politecnico di Torino, Turkish e-Devlet) carried a PDF signature. | ✅ |
+| **Sex requirement** (e.g. a room for women only): read from the issuer-signed identity card (codice fiscale), proven inside the ZK circuit – the landlord learns only ✓. New public input `requiredSex`, new trusted setup | ✅ |
+| **Signed documents for every type** (identity + codice fiscale, income with salary credits, enrolment, employment, balance, guarantor), issued by the Moneyfest test issuers, each with an `_EDITED` copy that is rejected (`keyproof/demo_docs/`) | ✅ |
 | **A real signed document with a real origin:** `keyproof/real_docs/Team_Moneyfest_membership.pdf`, written and signed (RSA 2048) by Team Moneyfest itself; Acrobat / poppler report "Signature is Valid"; the `_EDITED` copy (one name changed) is rejected | ✅ |
 | Pitch script and jury Q&A | ✅ [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md) |
 
@@ -168,7 +170,7 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 and Groth16 proofs; the RGB token and stablecoin transfers on Bitcoin Mutinynet; the local AI.
 
 **Demo:**
-- The issuers (Banca Demo, Demo Comune di Torino, Demo Politecnico di Torino, Demo Employer SpA) and the trust root
+- The issuers (Moneyfest Bank, Moneyfest Anagrafe, Moneyfest University, Moneyfest Employer – all marked "(test)") and the trust root
   are ours. The people (Elena Rossi, Marco Rossi) are fictional.
 - `TUSDT` is our own test stablecoin on Mutinynet (no value).
 - The ZK trusted setup was a single-team ceremony (fine for a demo, not for production).

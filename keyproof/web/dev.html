@@ -198,11 +198,11 @@ let lastRejected = null;
 function showUpload(entry) { if (!entry.ok) lastRejected = entry; else lastRejected = null; }
 $("fileIn").onchange = (e) => uploadFiles(e.target.files);
 $("samplesBtn").onclick = async () => {
-  for (const n of ["Certificato_anagrafico_Elena_Rossi.pdf", "Income_statement_Elena_Rossi.pdf", "Certificato_iscrizione_Elena_Rossi.pdf", "Balance_certificate_Elena_Rossi.pdf", "Guarantor_income_Marco_Rossi.pdf"])
+  for (const n of ["1_Identity_codice_fiscale_Elena_Rossi.pdf", "2_Income_statement_Elena_Rossi.pdf", "3_Enrolment_certificate_Elena_Rossi.pdf", "4_Balance_certificate_Elena_Rossi.pdf", "5_Guarantor_income_Marco_Rossi.pdf"])
     showUpload(await api("/api/tenant/sample", { name: n }));
   refresh();
 };
-$("fakeBtn").onclick = async () => { showUpload(await api("/api/tenant/sample", { name: "Income_statement_Elena_Rossi_EDITED.pdf" })); refresh(); };
+$("fakeBtn").onclick = async () => { showUpload(await api("/api/tenant/sample", { name: "2_Income_statement_Elena_Rossi_EDITED.pdf" })); refresh(); };
 
 function docHtml(d, rejected) {
   const pills = d.checks.map((c) => `<span class="pill ${c.ok ? "ok" : "bad"}" title="${esc(c.detail)}">${c.ok ? "✓" : "✗"} ${esc(c.check)}</span>`).join("");
@@ -275,7 +275,7 @@ async function landlordCheck() {
     steps.push(["Zero-knowledge proof is mathematically valid", zkOk, ""]);
     // the proof must use MY rules, not easier ones
     const N = 5, off = 1 + N + 2 * N;
-    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId"];
+    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId", "requiredSex"];
     const enabledOk = mine.enabled.every((e, i) => String(e) === publicSignals[1 + i]);
     const rulesOk = enabledOk && names.every((k, i) => String(mine[k]) === publicSignals[off + i]);
     steps.push(["Proof uses exactly my rules and my request number", rulesOk, ""]);

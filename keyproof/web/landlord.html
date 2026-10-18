@@ -48,7 +48,7 @@ function screenNotOwner() {
 }
 
 // ------------------------------------------------------------ step 1: describe + confirm the form
-function emptyRules() { return { checks: { identity: false, income: false, occupation: false, savings: false, guarantor: false }, minIncome: 0, allowStudent: false, allowEmployed: false, leaseEnd: "", minSavings: 0, minGuarantor: 0 }; }
+function emptyRules() { return { checks: { identity: false, income: false, occupation: false, savings: false, guarantor: false }, sex: "", minIncome: 0, allowStudent: false, allowEmployed: false, leaseEnd: "", minSavings: 0, minGuarantor: 0 }; }
 function screenForm() {
   setProgress(1);
   const r = draft || emptyRules();
@@ -62,7 +62,9 @@ function screenForm() {
       <button class="btn block" id="fill">${KP.icon("sparkle")} ${t("fill")}</button>
       ${aiNote ? `<div class="helper"><div class="who">${KP.icon("sparkle", 14)} ${t("helper")}</div>${esc(aiNote)}</div>` : ""}</div>
     ${draft ? `<div class="card"><h2>${t("l_rules")}</h2>
-      ${tog("identity")}
+      ${tog("identity", `<label class="small dim">${t("sex_label")}
+          <select id="sex">${["", "F", "M"].map((v) => `<option value="${v}" ${(r.sex || "") === v ? "selected" : ""}>${t(v ? "sex_only_" + v : "sex_any")}</option>`).join("")}</select></label>
+          ${r.sex ? `<div class="small dim">${t("sex_note")}</div>` : ""}`)}
       ${tog("income", num("minIncome", r.minIncome))}
       ${tog("occupation", `<label><input type="checkbox" id="allowStudent" ${r.allowStudent ? "checked" : ""}> ${t("occ_student")}</label>
                            <label><input type="checkbox" id="allowEmployed" ${r.allowEmployed ? "checked" : ""}> ${t("occ_employed")}</label>
@@ -88,6 +90,8 @@ function readDraft() {
   r.allowStudent = $("allowStudent") ? $("allowStudent").checked : false;
   r.allowEmployed = $("allowEmployed") ? $("allowEmployed").checked : false;
   r.leaseEnd = $("leaseEnd") ? $("leaseEnd").value : "";
+  r.sex = $("sex") ? $("sex").value : "";
+  if (r.sex) r.checks.identity = true;
   if (r.checks.occupation && !r.allowStudent && !r.allowEmployed) r.allowStudent = r.allowEmployed = true;
   return r;
 }
@@ -150,7 +154,7 @@ async function verify() {
                    ["Proof matches the hash committed in the RGB contract", box.digest_ok, ""]];
     steps.push(["Zero-knowledge proof is mathematically valid", await snarkjs.groth16.verify(vk, publicSignals, proof), ""]);
     const N = 5, off = 1 + N + 2 * N;
-    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId"];
+    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId", "requiredSex"];
     steps.push(["Proof uses exactly my rules and my request number",
       mine.enabled.every((e, i) => String(e) === publicSignals[1 + i]) && names.every((k, i) => String(mine[k]) === publicSignals[off + i]), ""]);
     let issuersOk = true; const used = [];
@@ -190,7 +194,7 @@ function bind() {
     } catch (e) { aiNote = e.message; }
     render(true, text);
   });
-  document.querySelectorAll("input[data-c], #allowStudent, #allowEmployed, #leaseEnd, #minIncome, #minSavings, #minGuarantor")
+  document.querySelectorAll("input[data-c], #allowStudent, #allowEmployed, #leaseEnd, #minIncome, #minSavings, #minGuarantor, #sex")
     .forEach((el) => (el.onchange = () => { const text = $("text").value; listingDraft = readListing(); draft = readDraft(); render(true, text); }));
   on("publish", async () => {
     const rules = readDraft();

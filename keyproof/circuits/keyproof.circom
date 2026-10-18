@@ -5,7 +5,7 @@ pragma circom 2.1.6;
 // Each document carries a small "data card" with 5 numbers, signed by its issuer (EdDSA-Poseidon):
 //   [docType, holder, value1, value2, issuedAt]
 // Slots (docType):
-//   1 identity     value1 = birth date (days since 1970)
+//   1 identity     value1 = birth date (days since 1970), value2 = sex as on the codice fiscale (1 M, 2 F)
 //   2 income       value1 = monthly income (EUR)
 //   3 occupation   value1 = status (1 student, 2 employed), value2 = end date (days)
 //   4 savings      value1 = balance (EUR)
@@ -69,6 +69,7 @@ template KeyProof() {
     signal input today;
     signal input maxAgeDays;        // money documents must be newer than this
     signal input requestId;         // ties the proof to one landlord request
+    signal input requiredSex;       // 0 = no check, 1 = M, 2 = F (read from the signed identity card)
 
     // ---- private inputs (the tenant's documents)
     signal input holder;
@@ -100,6 +101,10 @@ template KeyProof() {
     adult.enabled <== enabled[0];
     adult.a <== adultCutoff;
     adult.b <== card[0][2];
+
+    // 1b identity: sex, only when the landlord asks (e.g. a shared flat for women only)
+    requiredSex * (1 - enabled[0]) === 0;                // the identity card must be checked (signature on)
+    requiredSex * (card[0][3] - requiredSex) === 0;
 
     // 2 income
     component inc = RequireGE(BITS);
@@ -151,4 +156,4 @@ template KeyProof() {
 }
 
 component main {public [enabled, issuerAx, issuerAy, adultCutoff, minIncome, allowStudent, allowEmployed,
-                        leaseEnd, minSavings, minGuarantor, today, maxAgeDays, requestId]} = KeyProof();
+                        leaseEnd, minSavings, minGuarantor, today, maxAgeDays, requestId, requiredSex]} = KeyProof();

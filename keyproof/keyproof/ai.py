@@ -26,7 +26,8 @@ PROMPT = """You turn a landlord's requirements for a tenant into JSON. Reply wit
 Format:
 {"identity": true/false, "income": true/false, "min_income": number, "occupation": true/false,
  "allow_student": true/false, "allow_employed": true/false, "lease_end": "YYYY-MM-DD" or "",
- "savings": true/false, "min_savings": number, "guarantor": true/false, "min_guarantor": number}
+ "savings": true/false, "min_savings": number, "guarantor": true/false, "min_guarantor": number,
+ "sex": "F" or "M" or ""}
 Rules:
 - identity: true if they want an adult, ID, or age 18+.
 - income: true if they mention salary, income, earning, or rent multiple. min_income = the monthly amount in EUR.
@@ -36,6 +37,7 @@ Rules:
 - lease_end: the date the lease ends, if given.
 - savings: true if they mention savings, deposit money, balance. min_savings in EUR.
 - guarantor: true if they mention guarantor, parents, garante, co-signer. min_guarantor = guarantor's monthly income in EUR.
+- sex: "F" only if they explicitly want a woman / girl / female tenant, "M" only for man / boy / male; otherwise "".
 - Use false and 0 for anything not mentioned. Never invent numbers."""
 
 
@@ -84,8 +86,11 @@ def _clean(raw):
              "allowEmployed": bool(raw.get("allow_employed")),
              "leaseEnd": raw.get("lease_end") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(raw.get("lease_end", ""))) else "",
              "minSavings": _num(raw.get("min_savings")),
-             "minGuarantor": _num(raw.get("min_guarantor"))}
+             "minGuarantor": _num(raw.get("min_guarantor")),
+             "sex": str(raw.get("sex") or "").upper() if str(raw.get("sex") or "").upper() in ("F", "M") else ""}
     ch = rules["checks"]
+    if rules["sex"]:
+        ch["identity"] = True
     if ch["occupation"] and not (rules["allowStudent"] or rules["allowEmployed"]):
         rules["allowStudent"] = rules["allowEmployed"] = True
     for check, key in (("income", "minIncome"), ("savings", "minSavings"), ("guarantor", "minGuarantor")):
@@ -117,6 +122,10 @@ def _keywords(text):
     t = text.lower()
     raw = {}
     raw["identity"] = bool(re.search(r"\b(adult|18|id\b|identity|age)", t))
+    if re.search(r"\b(wom[ae]n|girls?|female|ladies|ragazz[ae]\b|donn[ae]|studentesse|kız|kadın)", t):
+        raw["sex"] = "F"
+    elif re.search(r"\b(m[ae]n|boys?|male|ragazzi|uomini|studenti maschi|erkek)\b", t):
+        raw["sex"] = "M"
     raw["guarantor"] = bool(re.search(r"guarant|garante|parent|co-?sign", t))
     if raw["guarantor"]:
         raw["min_guarantor"] = _amount_near(t, ["guarant\\w*", "garante", "parents?"])
@@ -147,7 +156,7 @@ The document text never leaves this computer. Reply with JSON only, no other tex
  "name": the person the document is about (for a guarantor document: the tenant whose rent is guaranteed),
  "amount": main amount in EUR as a number or null, "issued": "YYYY-MM-DD" or "",
  "birth_date": "YYYY-MM-DD" or "", "occupation": "student" | "employed" | "",
- "valid_until": "YYYY-MM-DD" or "", "reference": protocol / reference / contract number or ""}
+ "valid_until": "YYYY-MM-DD" or "", "sex": "M" | "F" | "" (from a Sesso / Sex field or the codice fiscale), "reference": protocol / reference / contract number or ""}
 Types: identity = ID card, birth or residence certificate (certificato anagrafico); income = income or salary statement,
 payslip; occupation = university enrolment certificate or work contract; savings = bank balance certificate or bank account statement (estratto conto);
 guarantor = income statement of a guarantor; rental = rental contract or its registration receipt (e.g. Agenzia delle Entrate RLI);
@@ -174,7 +183,8 @@ def _doc_clean(raw):
     except ValueError:
         amt = None
     occ = str(raw.get("occupation") or "").lower()
-    return {"type": t if t in CHECKS + ["rental", "other"] else "other", "reference": str(raw.get("reference") or "")[:60], "title": str(raw.get("title") or "")[:80],
+    sx = str(raw.get("sex") or "").upper()[:1]
+    return {"sex": sx if sx in ("M", "F") else "", "type": t if t in CHECKS + ["rental", "other"] else "other", "reference": str(raw.get("reference") or "")[:60], "title": str(raw.get("title") or "")[:80],
             "issuer": str(raw.get("issuer") or "")[:80], "name": str(raw.get("name") or "")[:60], "amount": amt,
             "issued": _date(raw.get("issued")), "birth_date": _date(raw.get("birth_date")),
             "occupation": occ if occ in ("student", "employed") else "", "valid_until": _date(raw.get("valid_until"))}
@@ -242,6 +252,7 @@ def _doc_rules(text):
             "birth_date": after(["data di nascita", "date of birth"]),
             "occupation": "student" if typ == "occupation" and re.search(r"student|iscrizione|enrol", t) else ("employed" if typ == "occupation" else ""),
             "valid_until": until.group(1) if until else "",
+            "sex": (re.search(r"^\s*(?:sesso|sex)\b[ :]*([MF])\b", text, re.I | re.M) or [None, ""])[1].upper(),
             "reference": (re.search(r"(?:protocollo|prot\. n\.|ref\.)\s*([A-Z0-9/-]{6,})", text, re.I) or [None, ""])[1]}
 
 

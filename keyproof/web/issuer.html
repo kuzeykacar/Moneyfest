@@ -16,8 +16,8 @@
 <script>
 const { api, esc, $, t } = KP;
 let S = null, busy = false, lastSig = "";
-const CREDS = [[1, "landmark", "Demo Comune di Torino", "d_identity"], [2, "bank", "Banca Demo", "d_income"], [3, "cap", "Demo Politecnico di Torino", "d_occupation"],
-               [4, "bank", "Banca Demo", "d_savings"], [5, "bank", "Banca Demo", "d_guarantor"]];
+const CREDS = [[1, "landmark", "Moneyfest Anagrafe (test)", "d_identity"], [2, "bank", "Moneyfest Bank (test)", "d_income"], [3, "cap", "Moneyfest University (test)", "d_occupation"],
+               [4, "bank", "Moneyfest Bank (test)", "d_savings"], [5, "bank", "Moneyfest Bank (test)", "d_guarantor"]];
 function render(force) {
   const iss = S && S.issuer;
   const sig = JSON.stringify([KP.lang(), iss && iss.status, busy]);

@@ -57,7 +57,7 @@ def save_cert(cert, path):
 
 def make_root():
     key = ec.generate_private_key(ec.SECP256R1())
-    subject = name("KeyProof Demo Trust Authority", "KeyProof Demo Root CA")
+    subject = name("Moneyfest Trust Authority (test)", "Moneyfest Root CA (test)")
     now = dt.datetime.now(dt.timezone.utc)
     cert = (x509.CertificateBuilder().subject_name(subject).issuer_name(subject)
             .public_key(key.public_key()).serial_number(x509.random_serial_number())
@@ -94,7 +94,7 @@ def _e(t):
     return t.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def layout(issuer, office, title, ref, rows, note, signer, when, accent=(0.11, 0.27, 0.55), footer=None, algo="ECDSA P-256, SHA-256"):
+def layout(issuer, office, title, ref, rows, note, signer, when, accent=(0.11, 0.27, 0.55), footer=None, algo="ECDSA P-256, SHA-256", table=None):
     """Official-looking one-page certificate: letterhead, title, reference, field table, signature panel."""
     r, g, b = accent
     o = []
@@ -118,6 +118,20 @@ def layout(issuer, office, title, ref, rows, note, signer, when, accent=(0.11, 0
     for line in note:
         txt("F1", 9.5, 48, y, line, (0.3, 0.33, 0.4))
         y -= 14
+    if table:
+        head, body = table
+        y -= 6
+        o.append(f"{r} {g} {b} rg 48 {y - 5} 499 18 re f")
+        xs = [56, 140, 470]
+        for x, h in zip(xs, head):
+            txt("F2", 9, x, y, h, (1, 1, 1))
+        y -= 20
+        for i, rowv in enumerate(body):
+            if i % 2:
+                o.append(f"0.96 0.97 0.98 rg 48 {y - 5} 499 16 re f")
+            for x, v in zip(xs, rowv):
+                txt("F1", 9, x, y, v)
+            y -= 16
     # signature panel
     o.append(f"0.96 0.97 0.99 rg {r} {g} {b} RG 1 w 300 120 247 92 re B")
     txt("F2", 10, 314, 192, "Digitally signed PDF (CMS signature)", (r, g, b))
@@ -155,14 +169,15 @@ def main():
         return write_docs(today, root_cert, issuers)
     root_key, root_cert = make_root()
     save_cert(root_cert, os.path.join(ROOT, "trust", "root.pem"))
+    save_key(root_key, os.path.join(ROOT, "data", "issuer_keys", "root.pem"))
     with open(os.path.join(ROOT, "trust", "revoked.json"), "w") as f:
         json.dump([], f)
 
     issuers = {
-        "comune": make_issuer(root_key, root_cert, "Demo Comune di Torino", "identity office", [1]),
-        "bank": make_issuer(root_key, root_cert, "Banca Demo", "bank", [2, 4, 5]),
-        "poli": make_issuer(root_key, root_cert, "Demo Politecnico di Torino", "university", [3]),
-        "employer": make_issuer(root_key, root_cert, "Demo Employer SpA", "employer", [3]),
+        "comune": make_issuer(root_key, root_cert, "Moneyfest Anagrafe (test)", "identity office", [1]),
+        "bank": make_issuer(root_key, root_cert, "Moneyfest Bank (test)", "bank", [2, 4, 5]),
+        "poli": make_issuer(root_key, root_cert, "Moneyfest University (test)", "university", [3]),
+        "employer": make_issuer(root_key, root_cert, "Moneyfest Employer (test)", "employer", [3]),
     }
     for k, iss in issuers.items():
         save_key(iss["key"], os.path.join(ROOT, "data", "issuer_keys", k + ".pem"))
@@ -173,76 +188,106 @@ def main():
     write_docs(today, root_cert, issuers)
 
 
-DOC_FILES = {1: "Certificato_anagrafico_Elena_Rossi.pdf", 2: "Income_statement_Elena_Rossi.pdf",
-             3: "Certificato_iscrizione_Elena_Rossi.pdf", 4: "Balance_certificate_Elena_Rossi.pdf",
-             5: "Guarantor_income_Marco_Rossi.pdf"}
-FAKE_FILE = "Income_statement_Elena_Rossi_EDITED.pdf"
+DOC_FILES = {1: "1_Identity_codice_fiscale_Elena_Rossi.pdf", 2: "2_Income_statement_Elena_Rossi.pdf",
+             3: "3_Enrolment_certificate_Elena_Rossi.pdf", 4: "4_Balance_certificate_Elena_Rossi.pdf",
+             5: "5_Guarantor_income_Marco_Rossi.pdf", 6: "3b_Employment_certificate_Elena_Rossi.pdf"}
+FAKE_FILE = "2_Income_statement_Elena_Rossi_EDITED.pdf"
 
 
 def write_docs(today, root_cert, issuers):
-    # Fictional tenant and guarantor.
+    # Fictional tenant (a woman, so the codice fiscale day of birth is +40) and her guarantor.
     tenant_name, tenant_cf = "Elena Rossi", "RSSLNE04C52L219K"
-    guarantor_name = "Marco Rossi"
+    guarantor_name, guarantor_cf = "Marco Rossi", "RSSMRC70A01L219X"
     holder = zk.to_field(tenant_cf)
     birth = dt.date(2004, 3, 12)
-    issued = days(today - dt.timedelta(days=6))
+    d_iss = today - dt.timedelta(days=6)
+    issued = days(d_iss)
+    d6 = d_iss.strftime("%d/%m/%Y")
+    signed = d_iss.strftime("%d/%m/%Y 10:42 CET")
+    foot = ("TEST ISSUER - issued and digitally signed by Moneyfest for the KeyProof prototype; the person is fictional. "
+            "Not a real public or bank document.")
+    iban = "IT60 X054 2811 1010 0000 0123 456"
+    mf = lambda k: issuers[k]["org"]
+    accent = {"comune": (0.13, 0.23, 0.45), "bank": (0.05, 0.27, 0.38), "poli": (0.20, 0.17, 0.42), "employer": (0.16, 0.30, 0.22)}
 
-    d6 = (today - dt.timedelta(days=6)).strftime("%d/%m/%Y")
-    signed = (today - dt.timedelta(days=6)).strftime("%d/%m/%Y 10:42 CET")
-    note_priv = ["This certificate is issued at the request of the holder for private use (rental application)."]
+    def doc(key, title, office, ref, rows, note, table=None):
+        return layout(mf(key), office, title, ref, rows, note, mf(key) + " - firma digitale", signed,
+                      accent=accent[key], footer=foot, table=table)
+
+    salary = [("02/05/2026", "Accredito stipendio - Moneyfest Employer", "1.640,00"),
+              ("02/06/2026", "Accredito stipendio - Moneyfest Employer", "1.655,00"),
+              ("02/07/2026", "Accredito stipendio - Moneyfest Employer", "1.650,00"),
+              ("03/08/2026", "Accredito stipendio - Moneyfest Employer", "1.650,00"),
+              ("02/09/2026", "Accredito stipendio - Moneyfest Employer", "1.648,00"),
+              ("02/10/2026", "Accredito stipendio - Moneyfest Employer", "1.657,00")]
     docs = {
-        DOC_FILES[1]: ("comune", make_card(issuers["comune"], 1, holder, days(birth), 0, issued), layout(
-            issuers["comune"]["org"], "Servizi Demografici - Ufficio Anagrafe", "Certificato anagrafico di nascita e residenza",
-            f"Prot. n. 2026/ANA/0148213   -   Issued {d6}",
-            [("Cognome e nome", tenant_name), ("Codice fiscale", tenant_cf),
+        DOC_FILES[1]: ("comune", make_card(issuers["comune"], 1, holder, days(birth), 2, issued), doc(
+            "comune", "Certificato anagrafico e codice fiscale", "Servizi Demografici - Ufficio Anagrafe, Torino",
+            f"Prot. n. 2026/ANA/0148213   -   Rilasciato il {d6}",
+            [("Cognome e nome", tenant_name), ("Codice fiscale", tenant_cf), ("Sesso", "F"),
              ("Data di nascita", birth.strftime("%d/%m/%Y")), ("Luogo di nascita", "Torino (TO)"),
              ("Residenza", "Via Roma 10, 10121 Torino (TO)"), ("Cittadinanza", "Italiana")],
-            ["Si rilascia in carta libera per gli usi consentiti dalla legge."] , "Ufficiale d'Anagrafe", signed)),
-        DOC_FILES[2]: ("bank", make_card(issuers["bank"], 2, holder, 1650, 0, issued), layout(
-            issuers["bank"]["org"], "Filiale di Torino Centro - ABI 99999", "Income statement",
+            ["Il codice fiscale e il sesso risultano dall'Anagrafe. Certificato rilasciato per uso privato."])),
+        DOC_FILES[2]: ("bank", make_card(issuers["bank"], 2, holder, 1650, 0, issued), doc(
+            "bank", "Certificazione dei redditi accreditati", "Filiale di Torino Centro - Via Garibaldi 2, 10122 Torino",
             f"Ref. INC-2026-77341   -   Issued {d6}",
-            [("Account holder", tenant_name), ("Codice fiscale", tenant_cf), ("IBAN", "IT60 X999 9901 0000 0000 0123 456"),
-             ("Period", "Apr 2026 - Sep 2026 (6 months)"),
-             ("Average monthly net income", "EUR 1,650"), ("Sources", "Part-time salary, scholarship")],
-            note_priv, issuers["bank"]["org"] + " - Ufficio Certificazioni", signed)),
-        DOC_FILES[3]: ("poli", make_card(issuers["poli"], 3, holder, 1, days(dt.date(2027, 9, 30)), issued), layout(
-            issuers["poli"]["org"], "Area Gestione Didattica - Segreteria Studenti", "Certificate of enrolment",
+            [("Account holder", tenant_name), ("Codice fiscale", tenant_cf), ("IBAN", iban),
+             ("Period", "May 2026 - Oct 2026 (6 months)"), ("Average monthly net income", "EUR 1,650")],
+            ["Salary credits received on the account in the period:"],
+            table=(("Date", "Description", "EUR"), salary))),
+        DOC_FILES[3]: ("poli", make_card(issuers["poli"], 3, holder, 1, days(dt.date(2027, 9, 30)), issued), doc(
+            "poli", "Certificato di iscrizione / Certificate of enrolment", "Segreteria Studenti - Corso Duca degli Abruzzi 24, Torino",
             f"Prot. n. 52190/2026   -   Issued {d6}",
             [("Student", tenant_name), ("Codice fiscale", tenant_cf), ("Student ID", "s314159"),
-             ("Programme", "BSc Computer Engineering"), ("Year", "2nd year, full time"),
+             ("Programme", "BSc Computer Engineering (L-8)"), ("Year", "2nd year, full time"),
              ("Academic year", "2026/2027, valid until 30/09/2027")],
-            note_priv, "Segreteria Studenti", signed, accent=(0.05, 0.33, 0.45))),
-        DOC_FILES[4]: ("bank", make_card(issuers["bank"], 4, holder, 4800, 0, issued), layout(
-            issuers["bank"]["org"], "Filiale di Torino Centro - ABI 99999", "Balance certificate",
+            ["The student is regularly enrolled for the academic year shown above."])),
+        DOC_FILES[6]: ("employer", make_card(issuers["employer"], 3, holder, 2, days(dt.date(2028, 6, 30)), issued), doc(
+            "employer", "Attestazione di servizio / Employment certificate", "Ufficio Risorse Umane - Via Nizza 150, Torino",
+            f"Ref. HR-2026-0412   -   Issued {d6}",
+            [("Employee", tenant_name), ("Codice fiscale", tenant_cf), ("Role", "Junior software developer (part time)"),
+             ("Contract", "Fixed term, from 01/03/2026"), ("Contract end", "30/06/2028"), ("Gross monthly salary", "EUR 2,050")],
+            ["We certify that the person above is employed by us under the contract described."])),
+        DOC_FILES[4]: ("bank", make_card(issuers["bank"], 4, holder, 4800, 0, issued), doc(
+            "bank", "Attestazione di saldo / Balance certificate", "Filiale di Torino Centro - Via Garibaldi 2, 10122 Torino",
             f"Ref. BAL-2026-55102   -   Issued {d6}",
-            [("Account holder", tenant_name), ("Codice fiscale", tenant_cf), ("IBAN", "IT60 X999 9901 0000 0000 0123 456"),
-             ("Balance date", d6), ("Available balance", "EUR 4,800")],
-            note_priv, issuers["bank"]["org"] + " - Ufficio Certificazioni", signed)),
-        DOC_FILES[5]: ("bank", make_card(issuers["bank"], 5, holder, 3900, 0, issued), layout(
-            issuers["bank"]["org"], "Filiale di Torino Centro - ABI 99999", "Guarantor income statement",
+            [("Account holder", tenant_name), ("Codice fiscale", tenant_cf), ("IBAN", iban),
+             ("Balance date", d6), ("Available balance", "EUR 4,800"), ("Average balance 2026", "EUR 4,215")],
+            ["Balance certified at the request of the account holder (rental application)."])),
+        DOC_FILES[5]: ("bank", make_card(issuers["bank"], 5, holder, 3900, 0, issued), doc(
+            "bank", "Dichiarazione del garante / Guarantor income statement", "Filiale di Torino Centro - Via Garibaldi 2, 10122 Torino",
             f"Ref. GUA-2026-10877   -   Issued {d6}",
-            [("Guarantor", guarantor_name), ("Guarantees the rent of", f"{tenant_name} ({tenant_cf})"),
-             ("Period", "Apr 2026 - Sep 2026 (6 months)"), ("Average monthly net income", "EUR 3,900")],
-            note_priv, issuers["bank"]["org"] + " - Ufficio Certificazioni", signed)),
+            [("Guarantor", guarantor_name), ("Guarantor codice fiscale", guarantor_cf),
+             ("Guarantees the rent of", f"{tenant_name} ({tenant_cf})"),
+             ("Period", "May 2026 - Oct 2026 (6 months)"), ("Average monthly net income", "EUR 3,900")],
+            ["The guarantor's salary credits were verified on the account held at this bank."])),
     }
     out_dir = os.path.join(ROOT, "demo_docs")
     os.makedirs(out_dir, exist_ok=True)
     for f in os.listdir(out_dir):
         if f.endswith(".pdf"):
             os.remove(os.path.join(out_dir, f))
+    pdfs = {}
     for fname, (iss_key, card, raw) in docs.items():
         iss = issuers[iss_key]
-        pdf = make_signed_pdf([], card, iss["org"], iss["key"], iss["cert"], raw=raw)
+        pdfs[fname] = make_signed_pdf([], card, iss["org"], iss["key"], iss["cert"], raw=raw)
         with open(os.path.join(out_dir, fname), "wb") as f:
-            f.write(pdf)
+            f.write(pdfs[fname])
 
-    # The fake: same income statement with one number edited (1,650 -> 2,650).
-    with open(os.path.join(out_dir, DOC_FILES[2]), "rb") as f:
-        real = f.read()
-    fake = real.replace(b"EUR 1,650", b"EUR 2,650")
-    assert fake != real and len(fake) == len(real)
-    with open(os.path.join(out_dir, FAKE_FILE), "wb") as f:
-        f.write(fake)
+    # Edited copies: one visible detail changed after signing (same length), so the signature breaks.
+    edits = {1: [(b"(F)", b"(M)")], 2: [(b"EUR 1,650", b"EUR 2,650")], 3: [(b"until 30/09/2027", b"until 30/09/2029")],
+             6: [(b"30/06/2028", b"30/06/2030")], 4: [(b"EUR 4,800", b"EUR 9,800")], 5: [(b"EUR 3,900", b"EUR 8,900")]}
+    fakes = []
+    for k, pairs in edits.items():
+        data = pdfs[DOC_FILES[k]]
+        fake = data
+        for a, b in pairs:
+            fake = fake.replace(a, b, 1)
+        assert fake != data and len(fake) == len(data), DOC_FILES[k]
+        name = DOC_FILES[k].replace(".pdf", "_EDITED.pdf")
+        with open(os.path.join(out_dir, name), "wb") as f:
+            f.write(fake)
+        fakes.append(name)
 
     # Filler for checks the landlord did not tick: a card signed by a throwaway key.
     filler_key = zk.new_private_key()
@@ -252,14 +297,11 @@ def write_docs(today, root_cert, issuers):
     with open(os.path.join(ROOT, "web", "zk", "dummy_card.json"), "w") as f:
         json.dump(filler, f)
 
-    # Self-check.
-    for fname in list(docs) + [FAKE_FILE]:
+    for fname in list(docs) + fakes:
         with open(os.path.join(out_dir, fname), "rb") as f:
             r = verify_pdf(f.read(), root_cert)
-        print(f"{fname:26} {'OK  ' if r['ok'] else 'FAIL'} " +
-              "; ".join(f"{c['check']}: {c['detail']}" for c in r["checks"]))
+        print(f"{fname:52} {'OK  ' if r['ok'] else 'FAIL'} " + "; ".join(f"{c['check']}: {c['detail']}" for c in r["checks"]))
     print("demo issuers and documents written")
-
 
 if __name__ == "__main__":
     main()

@@ -65,7 +65,7 @@ no "looks real" guessing, no metadata checks.
   EdDSA-Poseidon signatures on the data cards, the circom circuit and Groth16 proofs (made in the tenant's
   browser, verified in the landlord's browser), RGB transfers on Bitcoin Mutinynet (rgb-lib, on-chain),
   the local AI with QVAC.
-- **Demo:** the issuers (Banca Demo, Demo Comune di Torino, Demo Politecnico, Demo Employer) and the trust root
+- **Demo:** the issuers (Moneyfest Bank, Moneyfest Anagrafe, Moneyfest University, Moneyfest Employer (all "(test)")) and the trust root
   are ours, the people are fictional, the stablecoin `TUSDT` is our test token, and the ZK trusted setup is a
   single-team ceremony. Real issuers already sign PDFs; the next step is proving facts about their existing
   signatures directly (as PSE's zkPDF does) instead of our data card. One server plays both laptops in the demo,

@@ -28,6 +28,7 @@
       today: dayNumber(today),
       maxAgeDays: rules.maxAgeDays || 90,
       requestId: String(rules.requestId),
+      requiredSex: rules.sex === "M" ? 1 : rules.sex === "F" ? 2 : 0,
     };
   }
 
@@ -46,7 +47,10 @@
       if (card.type !== i + 1) return out.push({ slot: s, ok: false, why: "wrong kind of document" });
       if (card.holder !== holder) return out.push({ slot: s, ok: false, why: "belongs to a different person" });
       let ok = true, why = "";
-      if (s === "identity") { ok = card.v1 <= req.adultCutoff; why = ok ? "18 or older" : "under 18"; }
+      if (s === "identity") {
+        ok = card.v1 <= req.adultCutoff; why = ok ? "18 or older" : "under 18";
+        if (ok && req.requiredSex) { ok = card.v2 === req.requiredSex; why = ok ? "18 or older, sex as requested" : "sex does not match the request"; }
+      }
       if (s === "income") { ok = card.v1 >= req.minIncome && fresh(card); why = !fresh(card) ? "document too old" : ok ? "income meets the minimum" : "income below the minimum"; }
       if (s === "occupation") {
         const st = (card.v1 === 1 && req.allowStudent) || (card.v1 === 2 && req.allowEmployed);
@@ -68,7 +72,7 @@
       issuerAx: [], issuerAy: [], card: [], R8x: [], R8y: [], S: [], holder: "0",
     });
     for (const k of ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd",
-                     "minSavings", "minGuarantor", "today", "maxAgeDays"]) input[k] = String(req[k]);
+                     "minSavings", "minGuarantor", "today", "maxAgeDays", "requiredSex"]) input[k] = String(req[k] || 0);
     SLOTS.forEach((s, i) => {
       const card = req.enabled[i] ? cards[s] : null;
       if (card) {
@@ -90,7 +94,7 @@
     return [holderTag, ...req.enabled.map(String),
       ...issuerKeys.map((k) => k[0]), ...issuerKeys.map((k) => k[1]),
       ...["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings",
-          "minGuarantor", "today", "maxAgeDays", "requestId"].map((k) => String(req[k]))];
+          "minGuarantor", "today", "maxAgeDays", "requestId", "requiredSex"].map((k) => String(req[k] || 0))];
   }
 
   root.KeyProofZK = { SLOTS, dayNumber, publicRequest, precheck, circuitInput, publicSignals };

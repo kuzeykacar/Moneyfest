@@ -11,7 +11,7 @@ const dir = process.argv[2], D = __dirname + '/../demo_docs/';
   await L.goto('http://127.0.0.1:8010/'); await L.waitForTimeout(500); await shot(L, '00_home');
   await L.goto('http://127.0.0.1:8010/admin.html'); await L.waitForTimeout(500); await shot(L, '00b_admin');
   await L.goto('http://127.0.0.1:8010/landlord.html'); await L.waitForTimeout(800);
-  await L.click('#fill'); await L.waitForSelector('#publish'); await L.fill('#fAddr', 'Via Nizza 45, 10125 Torino');
+  await L.click('#fill'); await L.waitForSelector('#publish'); if (process.env.SEX) { await L.selectOption('#sex', process.env.SEX); await L.waitForTimeout(500); } await L.fill('#fAddr', 'Via Nizza 45, 10125 Torino');
   await L.waitForTimeout(300); await shot(L, '02_landlord_form');
   await L.click('#publish'); await L.waitForSelector('.code'); await L.waitForTimeout(500);
   await shot(L, '03_landlord_published');
@@ -19,11 +19,11 @@ const dir = process.argv[2], D = __dirname + '/../demo_docs/';
   await T.goto('http://127.0.0.1:8010/a/' + code); await T.waitForSelector('#next1'); await T.waitForTimeout(800);
   await shot(T, '04_tenant_request');
   await T.click('#next1'); await T.waitForSelector('#dropIn', { state: 'attached' }); await shot(T, '05_tenant_docs_empty');
-  await T.setInputFiles('#dropIn', [D + 'Income_statement_Elena_Rossi_EDITED.pdf']); await T.waitForSelector('.notice.bad'); await T.waitForTimeout(800);
+  await T.setInputFiles('#dropIn', [D + '2_Income_statement_Elena_Rossi_EDITED.pdf']); await T.waitForSelector('.notice.bad'); await T.waitForTimeout(800);
   await shot(T, '06_tenant_fake_rejected');
   if (process.env.REAL_PDFS) { await T.setInputFiles('#dropIn', process.env.REAL_PDFS.split(',')); await T.waitForTimeout(2500); await shot(T, '06b_tenant_real_docs'); }
-  await T.setInputFiles('#dropIn', ['Certificato_anagrafico_Elena_Rossi.pdf', 'Income_statement_Elena_Rossi.pdf', 'Certificato_iscrizione_Elena_Rossi.pdf',
-    'Balance_certificate_Elena_Rossi.pdf', 'Guarantor_income_Marco_Rossi.pdf'].map((f) => D + f));
+  await T.setInputFiles('#dropIn', ['1_Identity_codice_fiscale_Elena_Rossi.pdf', '2_Income_statement_Elena_Rossi.pdf', '3_Enrolment_certificate_Elena_Rossi.pdf',
+    '4_Balance_certificate_Elena_Rossi.pdf', '5_Guarantor_income_Marco_Rossi.pdf'].map((f) => D + f));
   await T.waitForSelector('#next2:not([disabled])', { timeout: 20000 }); await T.waitForTimeout(500);
   await shot(T, '07_tenant_docs_ok');
   await T.click('#next2'); await T.click('#prove'); await T.waitForSelector('#send', { timeout: 120000 });

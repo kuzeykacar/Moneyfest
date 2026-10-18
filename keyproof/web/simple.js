@@ -62,7 +62,7 @@
       wallet_title: "In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
       wallet_use: "Use these credentials", wallet_none: "Nothing in your wallet yet.", wallet_arriving: "Credentials are on their way to your wallet (about 1–2 minutes)…",
       or_pdf: "Or add signed PDF documents:", issuer: "Issuer",
-      i_title: "Send official credentials", i_text: "Banca Demo, Demo Comune di Torino and Demo Politecnico send Elena's signed credentials straight to her wallet, on Bitcoin. In the future, this replaces PDF documents.",
+      i_title: "Send official credentials", i_text: "Moneyfest Bank (test), Moneyfest Anagrafe (test) and Demo Politecnico send Elena's signed credentials straight to her wallet, on Bitcoin. In the future, this replaces PDF documents.",
       i_send: "Send credentials to Elena's wallet", i_sending: "Sending…", i_sent: "Sent. They arrive in about 1–2 minutes.", i_done: "Delivered to Elena's wallet ✓",
       tenant: "Tenant", landlord: "Landlord", step: "Step {a} of {b}",
       t_wait_title: "Waiting for a landlord", t_wait_text: "When a landlord publishes what they need, it appears here.",
@@ -90,7 +90,8 @@
       l_dep_req: "Your assistant asked the tenant for the deposit of {amount}.", l_dep_ok: "Deposit of {amount} received ✓",
       new_request: "Change my request", tech: "Show technical details", helper: "Your assistant",
       reset: "Reset demo", dev: "Developer view", wallets: "Wallets",
-      identity: "Is an adult (18 or older)",
+      identity: "Is an adult (18 or older)", sex_F: "a woman", sex_M: "a man", sex_any: "Anyone", sex_only_F: "Women only", sex_only_M: "Men only", sex_label: "Sex (from the signed codice fiscale)",
+      sex_note: "Only for rooms in a shared flat or your own home – elsewhere a sex requirement may be discrimination.",
       income: "Earns at least {x} per month",
       occ_student: "Is a student", occ_employed: "Has a job", occ_either: "Is a student or has a job", occ_until: "until {d}",
       savings: "Has at least {x} in savings", guarantor: "Has a guarantor who earns at least {x} per month",
@@ -141,7 +142,7 @@
       wallet_title: "Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
       wallet_use: "Usa queste credenziali", wallet_none: "Ancora niente nel portafoglio.", wallet_arriving: "Le credenziali stanno arrivando (circa 1–2 minuti)…",
       or_pdf: "Oppure aggiungi documenti PDF firmati:", issuer: "Ente",
-      i_title: "Invia credenziali ufficiali", i_text: "Banca Demo, Demo Comune di Torino e Demo Politecnico inviano le credenziali firmate di Elena direttamente al suo portafoglio, su Bitcoin. In futuro sostituiscono i PDF.",
+      i_title: "Invia credenziali ufficiali", i_text: "Moneyfest Bank (test), Moneyfest Anagrafe (test) e Demo Politecnico inviano le credenziali firmate di Elena direttamente al suo portafoglio, su Bitcoin. In futuro sostituiscono i PDF.",
       i_send: "Invia le credenziali a Elena", i_sending: "Invio…", i_sent: "Inviate. Arrivano in circa 1–2 minuti.", i_done: "Consegnate nel portafoglio di Elena ✓",
       tenant: "Inquilino", landlord: "Proprietario", step: "Passo {a} di {b}",
       t_wait_title: "In attesa di un proprietario", t_wait_text: "Quando un proprietario pubblica le sue richieste, appaiono qui.",
@@ -169,7 +170,8 @@
       l_dep_req: "Il tuo assistente ha chiesto il deposito di {amount}.", l_dep_ok: "Deposito di {amount} ricevuto ✓",
       new_request: "Modifica la richiesta", tech: "Mostra dettagli tecnici", helper: "Il tuo assistente",
       reset: "Ricomincia demo", dev: "Vista sviluppatore", wallets: "Portafogli",
-      identity: "È maggiorenne (18 anni o più)",
+      identity: "È maggiorenne (18 anni o più)", sex_F: "donna", sex_M: "uomo", sex_any: "Chiunque", sex_only_F: "Solo donne", sex_only_M: "Solo uomini", sex_label: "Sesso (dal codice fiscale firmato)",
+      sex_note: "Solo per stanze in appartamento condiviso o in casa tua: altrimenti può essere discriminazione.",
       income: "Guadagna almeno {x} al mese",
       occ_student: "È uno studente", occ_employed: "Ha un lavoro", occ_either: "È studente o ha un lavoro", occ_until: "fino al {d}",
       savings: "Ha almeno {x} di risparmi", guarantor: "Ha un garante che guadagna almeno {x} al mese",
@@ -220,7 +222,7 @@
       wallet_title: "Cüzdanınızda", wallet_text: "Bankanızın, belediyenin ve üniversitenizin doğrudan cüzdanınıza gönderdiği resmi belgeler. PDF gerekmez.",
       wallet_use: "Bu belgeleri kullan", wallet_none: "Cüzdanınızda henüz bir şey yok.", wallet_arriving: "Belgeler cüzdanınıza geliyor (yaklaşık 1–2 dakika)…",
       or_pdf: "Ya da imzalı PDF belgeleri ekleyin:", issuer: "Kurum",
-      i_title: "Resmi belgeleri gönder", i_text: "Banca Demo, Demo Torino Belediyesi ve Demo Politeknik, Elena'nın imzalı belgelerini Bitcoin üzerinden doğrudan cüzdanına gönderir. Gelecekte PDF'lerin yerini alır.",
+      i_title: "Resmi belgeleri gönder", i_text: "Moneyfest Bank (test), Demo Torino Belediyesi ve Demo Politeknik, Elena'nın imzalı belgelerini Bitcoin üzerinden doğrudan cüzdanına gönderir. Gelecekte PDF'lerin yerini alır.",
       i_send: "Belgeleri Elena'nın cüzdanına gönder", i_sending: "Gönderiliyor…", i_sent: "Gönderildi. Yaklaşık 1–2 dakikada ulaşır.", i_done: "Elena'nın cüzdanına ulaştı ✓",
       tenant: "Kiracı", landlord: "Ev sahibi", step: "Adım {a} / {b}",
       t_wait_title: "Ev sahibi bekleniyor", t_wait_text: "Bir ev sahibi isteklerini yayınladığında burada görünür.",
@@ -248,7 +250,8 @@
       l_dep_req: "Asistanınız kiracıdan {amount} depozito istedi.", l_dep_ok: "{amount} depozito alındı ✓",
       new_request: "İsteğimi değiştir", tech: "Teknik ayrıntıları göster", helper: "Asistanınız",
       reset: "Demoyu sıfırla", dev: "Geliştirici görünümü", wallets: "Cüzdanlar",
-      identity: "Reşit (18 yaş veya üstü)",
+      identity: "Reşit (18 yaş veya üstü)", sex_F: "kadın", sex_M: "erkek", sex_any: "Herkes", sex_only_F: "Yalnızca kadınlar", sex_only_M: "Yalnızca erkekler", sex_label: "Cinsiyet (imzalı vergi kodundan)",
+      sex_note: "Yalnızca paylaşımlı evde oda veya kendi eviniz için – aksi halde ayrımcılık olabilir.",
       income: "Ayda en az {x} kazanıyor",
       occ_student: "Öğrenci", occ_employed: "Bir işi var", occ_either: "Öğrenci veya bir işi var", occ_until: "{d} tarihine kadar",
       savings: "En az {x} birikimi var", guarantor: "Ayda en az {x} kazanan bir kefili var",
@@ -299,10 +302,10 @@
   };
 
   S.SLOTS = ["identity", "income", "occupation", "savings", "guarantor"];
-  S.SAMPLE = { identity: "Certificato_anagrafico_Elena_Rossi.pdf", income: "Income_statement_Elena_Rossi.pdf", occupation: "Certificato_iscrizione_Elena_Rossi.pdf", savings: "Balance_certificate_Elena_Rossi.pdf", guarantor: "Guarantor_income_Marco_Rossi.pdf" };
+  S.SAMPLE = { identity: "1_Identity_codice_fiscale_Elena_Rossi.pdf", income: "2_Income_statement_Elena_Rossi.pdf", occupation: "3_Enrolment_certificate_Elena_Rossi.pdf", savings: "4_Balance_certificate_Elena_Rossi.pdf", guarantor: "5_Guarantor_income_Marco_Rossi.pdf" };
   // A landlord rule in plain words
   S.ruleText = (slot, r) => {
-    if (slot === "identity") return S.t("identity");
+    if (slot === "identity") return S.t("identity") + (r.sex === "F" || r.sex === "M" ? " · " + S.t("sex_" + r.sex) : "");
     if (slot === "income") return S.t("income", { x: amt(r.minIncome) });
     if (slot === "savings") return S.t("savings", { x: amt(r.minSavings) });
     if (slot === "guarantor") return S.t("guarantor", { x: amt(r.minGuarantor) });
@@ -386,7 +389,7 @@
       const vk = await (await fetch("zk/verification_key.json")).json();
       const file = { about: "KeyProof zero-knowledge proof (Groth16, BN254). Contains no personal data.",
         how_to_verify: "Save 'proof' as proof.json, 'publicSignals' as public.json, 'verification_key' as verification_key.json, then run: snarkjs groth16 verify verification_key.json public.json proof.json",
-        public_signals_order: "holderTag, enabled[5], issuerAx[5], issuerAy[5], adultCutoff, minIncome, allowStudent, allowEmployed, leaseEnd, minSavings, minGuarantor, today, maxAgeDays, requestId",
+        public_signals_order: "holderTag, enabled[5], issuerAx[5], issuerAy[5], adultCutoff, minIncome, allowStudent, allowEmployed, leaseEnd, minSavings, minGuarantor, today, maxAgeDays, requestId, requiredSex (0 none, 1 M, 2 F)",
         ...b, verification_key: vk };
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: "application/json" }));
