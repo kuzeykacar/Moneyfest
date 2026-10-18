@@ -78,7 +78,8 @@ no "looks real" guessing, no metadata checks.
 3. App:
    - `scripts/run_demo.command`: simulated RGB, no bitcoin needed.
    - `scripts/run_real.command`: real RGB on Mutinynet (wallets must be funded first, see below).
-4. Open **http://127.0.0.1:8010** (demo) and **http://127.0.0.1:8010/wallets.html** (wallets).
+4. Open **http://127.0.0.1:8010**: choose **Tenant** or **Landlord** (simple screens, EN/IT/TR).
+Also: `/dev.html` (developer view, both sides on one page) and `/wallets.html` (wallets).
 
 **Test flow:** landlord "Fill the form with local AI" → Publish → tenant "Try an edited (fake) PDF" (rejected) →
 "Use demo documents" → "Create zero-knowledge proof" → "Send approval via RGB" → wait 1–2 min →

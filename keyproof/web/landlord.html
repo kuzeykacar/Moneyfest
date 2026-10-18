@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof – Landlord</title>
+<link rel="stylesheet" href="simple.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="/">🔑 KeyProof</a>
+    <span class="who" id="who"></span>
+    <span class="sp"></span>
+    <span id="langBox"></span>
+  </header>
+  <div class="progress" id="progress"><div></div><div></div><div></div></div>
+  <div class="stepinfo" id="stepinfo"></div>
+  <main id="main" aria-live="polite"></main>
+  <footer class="foot">
+    <a href="/tenant.html" id="fTenant"></a>
+    <a href="/wallets.html" id="fWallets"></a>
+    <a href="/dev.html" id="fDev"></a>
+    <button id="fReset"></button>
+  </footer>
+</div>
+
+<script src="zk/snarkjs.min.js"></script>
+<script src="zk/keyproof.js"></script>
+<script src="simple.js"></script>
+<script>
+const { api, esc, eur, $, t } = KP;
+const Z = window.KeyProofZK;
+let S = null, editing = true, draft = null, aiNote = "", lastSig = "";
+let verdict = null;      // {asset, ok, steps, summary}
+let verifying = false, vk = null;
+
+const EXAMPLES = {
+  en: ["Adult student, earns at least 1500 a month, studying until 2027-07-31", "Working professional, salary 2000+, savings of 5000", "Students welcome, parents as guarantor with 3000 income"],
+  it: ["Studente maggiorenne con almeno 1200 euro al mese", "Lavoratore con stipendio di almeno 2000 euro e 5000 di risparmi", "Studenti con un genitore garante che guadagna 3000 euro"],
+  tr: ["Ayda en az 1500 euro kazanan reşit bir öğrenci", "En az 2000 euro maaşlı ve 5000 euro birikimi olan çalışan", "Kefili ayda 3000 euro kazanan öğrenciler"],
+};
+function setProgress(step) {
+  [...$("progress").children].forEach((d, i) => d.classList.toggle("on", i < step));
+  $("stepinfo").textContent = t("step", { a: step, b: 3 });
+}
+
+// ------------------------------------------------------------ step 1: describe + confirm the form
+function emptyRules() { return { checks: { identity: false, income: false, occupation: false, savings: false, guarantor: false }, minIncome: 0, allowStudent: false, allowEmployed: false, leaseEnd: "", minSavings: 0, minGuarantor: 0 }; }
+function screenForm() {
+  setProgress(1);
+  const r = draft || emptyRules();
+  const tog = (s, extra) => `<label class="toggle"><input type="checkbox" data-c="${s}" ${r.checks[s] ? "checked" : ""}>
+      <div><div class="title">${esc(KP.ruleText(s, r))}</div>${extra ? `<div class="opts">${extra}</div>` : ""}</div></label>`;
+  const num = (id, v) => `€ <input type="number" id="${id}" value="${v || ""}" min="0" step="50" inputmode="numeric">`;
+  return `<div class="card"><h1>${t("l1_title")}</h1><p class="dim">${t("l1_text")}</p>
+      <textarea id="text" aria-label="${esc(t("l1_title"))}">${esc($("text") ? $("text").value : (EXAMPLES[KP.lang()] || EXAMPLES.en)[0])}</textarea>
+      <div class="chips">${(EXAMPLES[KP.lang()] || EXAMPLES.en).map((e, i) => `<button class="chip" data-ex="${i}">${esc(e)}</button>`).join("")}</div>
+      <button class="btn block" id="fill">✨ ${t("fill")}</button>
+      ${aiNote ? `<div class="helper"><div class="who">💬 ${t("helper")}</div>${esc(aiNote)}</div>` : ""}</div>
+    ${draft ? `<div class="card"><h2>${t("l_rules")}</h2>
+      ${tog("identity")}
+      ${tog("income", num("minIncome", r.minIncome))}
+      ${tog("occupation", `<label><input type="checkbox" id="allowStudent" ${r.allowStudent ? "checked" : ""}> ${t("occ_student")}</label>
+                           <label><input type="checkbox" id="allowEmployed" ${r.allowEmployed ? "checked" : ""}> ${t("occ_employed")}</label>
+                           <input type="date" id="leaseEnd" value="${r.leaseEnd || ""}">`)}
+      ${tog("savings", num("minSavings", r.minSavings))}
+      ${tog("guarantor", num("minGuarantor", r.minGuarantor))}
+      <div class="row" style="margin-top:14px"><label>${t("rent")} € <input type="number" id="rent" value="${S.request ? S.request.rent : 550}"></label>
+        <label>${t("deposit")} € <input type="number" id="deposit" value="${S.request ? S.request.deposit : 1100}"></label></div>
+      <button class="btn ok block" id="publish" style="margin-top:16px">${t("publish")} →</button></div>` : ""}`;
+}
+function readDraft() {
+  const r = emptyRules();
+  document.querySelectorAll("input[data-c]").forEach((el) => (r.checks[el.dataset.c] = el.checked));
+  const v = (id) => ($(id) ? +$(id).value || 0 : 0);
+  r.minIncome = v("minIncome"); r.minSavings = v("minSavings"); r.minGuarantor = v("minGuarantor");
+  r.allowStudent = $("allowStudent") ? $("allowStudent").checked : false;
+  r.allowEmployed = $("allowEmployed") ? $("allowEmployed").checked : false;
+  r.leaseEnd = $("leaseEnd") ? $("leaseEnd").value : "";
+  if (r.checks.occupation && !r.allowStudent && !r.allowEmployed) r.allowStudent = r.allowEmployed = true;
+  return r;
+}
+
+// ------------------------------------------------------------ step 2/3: waiting, result, deposit
+function screenStatus() {
+  const req = S.request, r = req.rules, ap = S.tenant.approval;
+  const reqHtml = `<div class="card"><h1>${t("l2_title")}</h1>
+      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon">•</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      <p class="dim">${t("rent")}: <b>${eur(req.rent)}</b> · ${t("deposit")}: <b>${eur(req.deposit)}</b></p>
+      ${ap ? "" : `<div class="notice wait"><span class="spinner"></span> ${t("l2_wait")}</div>
+      <button class="btn secondary" id="edit">${t("new_request")}</button>`}</div>`;
+  if (!ap) { setProgress(2); return reqHtml; }
+  setProgress(3);
+  let res;
+  if (!verdict || verdict.asset !== ap.asset_id) {
+    res = `<div class="card"><div class="notice wait"><span class="spinner"></span> ${ap.status === "settled" ? t("l_checking") : t("l_arriving")}</div></div>`;
+  } else {
+    res = `<div class="card"><div class="notice ${verdict.ok ? "ok" : "bad"} big-result">${verdict.ok ? "✓ " + t("l_ok") : "✗ " + t("l_bad")}</div>
+      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ${verdict.ok ? "ok" : "bad"}">${verdict.ok ? "✓" : "✗"}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      <p><b>${t("l_never")}</b></p><div id="summary"></div>
+      <details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>
+        ${verdict.steps.map((st) => `<li>${st[1] ? "✓" : "✗"} ${esc(st[0])}${st[2] ? " – " + esc(st[2]) : ""}</li>`).join("")}
+        ${S.landlord.log.filter((l) => l.link).map((l) => `<li>${esc(l.text)} – <a href="${l.link}" target="_blank" rel="noopener">${l.link.split("/").pop().slice(0, 16)}…</a></li>`).join("")}
+      </ul></div></details></div>`;
+    const d = S.landlord.deposit;
+    if (d) res += `<div class="card"><h2>${t("deposit")}</h2><div class="notice ${d.status === "settled" ? "ok" : "wait"}">
+        ${d.status === "settled" ? "<b>" + t("l_dep_ok", { amount: eur(d.amount) }) + "</b>" : `<span class="spinner"></span> ${t("l_dep_req", { amount: eur(d.amount) })}`}</div></div>`;
+  }
+  return reqHtml + res;
+}
+
+// The landlord's own checks on what arrived in its RGB wallet (same as the developer view).
+async function verify() {
+  if (verifying || !S.request || !S.tenant.approval) return;
+  const box = await api("/api/landlord/inbox");
+  if (!box.arrived || (verdict && verdict.asset === box.asset_id)) return;
+  verifying = true;
+  try {
+    vk = vk || (await (await fetch("zk/verification_key.json")).json());
+    const { proof, publicSignals } = box.proof;
+    const mine = Z.publicRequest(S.request.rules);
+    const steps = [["RGB token received and validated by my wallet", true, box.asset_id.slice(0, 30) + "…"],
+                   ["Proof matches the hash committed in the RGB contract", box.digest_ok, ""]];
+    steps.push(["Zero-knowledge proof is mathematically valid", await snarkjs.groth16.verify(vk, publicSignals, proof), ""]);
+    const N = 5, off = 1 + N + 2 * N;
+    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId"];
+    steps.push(["Proof uses exactly my rules and my request number",
+      mine.enabled.every((e, i) => String(e) === publicSignals[1 + i]) && names.every((k, i) => String(mine[k]) === publicSignals[off + i]), ""]);
+    let issuersOk = true; const used = [];
+    mine.enabled.forEach((e, i) => {
+      if (!e) return;
+      const iss = S.trusted.find((x) => x.zk[0] === publicSignals[1 + N + i] && x.zk[1] === publicSignals[1 + 2 * N + i] && x.docTypes.includes(i + 1));
+      if (!iss) issuersOk = false; else used.push(iss.name);
+    });
+    steps.push(["Every document was signed by a trusted issuer", issuersOk, [...new Set(used)].join(", ")]);
+    const ok = steps.every((s) => s[1]);
+    verdict = { asset: box.asset_id, ok, steps };
+    await api("/api/landlord/result", { ok, asset_id: box.asset_id, reason: steps.filter((s) => !s[1]).map((s) => s[0]).join("; ") });
+  } finally { verifying = false; }
+  refresh(true);
+}
+
+async function fillHelpers() {
+  if ($("summary") && verdict && verdict.ok) {
+    const r = S.request.rules;
+    const h = await KP.explain("summary", { items: KP.ticked(r).map((s) => KP.ruleText(s, r)), deposit: eur(S.request.deposit) }, "sum" + verdict.asset);
+    if ($("summary")) $("summary").innerHTML = KP.helperHtml(h.text, h.source);
+  }
+}
+
+function bind() {
+  const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
+  document.querySelectorAll("[data-ex]").forEach((el) => (el.onclick = () => { $("text").value = el.textContent; }));
+  on("fill", async () => {
+    const text = $("text").value;
+    $("fill").disabled = true; $("fill").innerHTML = `<span class="spinner"></span> ${t("filling")}`;
+    try {
+      const out = await api("/api/landlord/parse", { text });
+      draft = out.rules;
+      const n = KP.ticked(draft).length;
+      aiNote = (KP.lang() === "it" ? `Ho compilato ${n} requisiti. Controllali qui sotto.` : KP.lang() === "tr" ? `${n} şartı doldurdum. Lütfen aşağıda kontrol edin.` : `I filled in ${n} requirements for you. Please check them below.`)
+               + (out.source === "qvac" ? ` (${out.model || "local AI"})` : "");
+    } catch (e) { aiNote = e.message; }
+    render(true, text);
+  });
+  document.querySelectorAll("input[data-c], #allowStudent, #allowEmployed, #leaseEnd, #minIncome, #minSavings, #minGuarantor")
+    .forEach((el) => (el.onchange = () => { const text = $("text").value; draft = readDraft(); render(true, text); }));
+  on("publish", async () => {
+    const rules = readDraft();
+    if (!Object.values(rules.checks).some(Boolean)) return;
+    await api("/api/landlord/publish", { rules, rent: $("rent").value, deposit: $("deposit").value });
+    editing = false; verdict = null; refresh(true);
+  });
+  on("edit", () => { editing = true; draft = S.request.rules; render(true); });
+}
+
+function render(force, keepText) {
+  if (!S) return;
+  const showForm = !S.request || editing;
+  const sig = JSON.stringify([showForm, KP.lang(), S.request && S.request.rules.requestId, S.tenant.approval, S.landlord.deposit, verdict && verdict.asset, !!draft]);
+  if (!force && sig === lastSig) return;
+  lastSig = sig;
+  $("main").innerHTML = showForm ? screenForm() : screenStatus();
+  if (keepText !== undefined && $("text")) $("text").value = keepText;
+  bind(); fillHelpers();
+  if (!showForm) verify();
+}
+function labels() {
+  $("who").textContent = "🏠 " + t("landlord");
+  $("fTenant").textContent = t("tenant") + " →"; $("fWallets").textContent = t("wallets");
+  $("fDev").textContent = t("dev"); $("fReset").textContent = t("reset");
+}
+async function refresh(force) {
+  try {
+    S = await api("/api/state");
+    if (S.request && editing && lastSig === "") editing = false;   // page opened after publishing
+    if (S.landlord.result && S.tenant.approval && !verdict) verify();
+    render(force);
+  } catch (e) { console.error(e); }
+}
+$("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
+$("fReset").onclick = async () => { if (confirm(t("reset") + "?")) { await api("/api/reset", {}); draft = null; verdict = null; editing = true; aiNote = ""; refresh(true); } };
+labels(); refresh(true); setInterval(() => { refresh(false); if (S && S.tenant.approval && !verdict) verify(); }, 2500);
+</script>
+</body>
+</html>

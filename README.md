@@ -144,7 +144,8 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | Signature checks | ✅ |
 | ZK circuit, trusted setup, browser proving and verifying | ✅ |
 | Local AI (QVAC, Qwen3.5 4B) filling the landlord form | ✅ 10/10 on our benchmark (keyword backup) |
-| Web app: landlord panel + tenant panel | ✅ |
+| Simple screens for tenant and landlord (one step at a time, big buttons, plain words, EN/IT/TR) | ✅ |
+| Local AI assistant texts: explains requests, rejections, results and the deposit in the user's language | ✅ |
 | Wallet page: balances, assets, transactions, every spend needs Confirm | ✅ |
 | Real RGB approval token + deposit on Mutinynet | ✅ |
 | Pitch script and jury Q&A | ✅ [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md) |
@@ -180,7 +181,8 @@ keyproof/scripts/run_demo.command     # app with simulated RGB (no bitcoin neede
 keyproof/scripts/run_real.command     # app with real RGB on Mutinynet (wallets must be funded)
 ```
 
-Open **http://127.0.0.1:8010** (demo) and **http://127.0.0.1:8010/wallets.html** (wallets).
+Open **http://127.0.0.1:8010**: choose **Tenant** or **Landlord** (simple screens, EN/IT/TR).
+Also: `/dev.html` (developer view, both sides on one page) and `/wallets.html` (wallets).
 On a Mac, double-click the `.command` files in Finder.
 
 **Demo flow (3 minutes):** landlord "Fill the form with local AI" → **Publish** → tenant **"Try an edited (fake)

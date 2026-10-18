@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #262b36; --text: #e8eaf0; --dim: #9aa3b5;
+    --green: #4ade80; --red: #f87171; --amber: #fbbf24; --blue: #7aa2ff; --chip: #1f2430;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, "Segoe UI", Inter, sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+  header .tag { color: var(--dim); font-size: 13px; }
+  .badge { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--chip); color: var(--dim); border: 1px solid var(--line); }
+  .badge.real { color: var(--green); border-color: #1f5133; }
+  .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 18px 22px; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  section.side { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+  .side h2 { margin: 0 0 2px; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; }
+  .side.landlord h2 { color: var(--blue); }
+  .side.tenant h2 { color: var(--green); }
+  .side .sub { color: var(--dim); font-size: 13px; margin-bottom: 12px; }
+  h3 { font-size: 15px; margin: 18px 0 8px; display: flex; gap: 8px; align-items: center; }
+  h3 .n { width: 22px; height: 22px; border-radius: 50%; background: var(--chip); display: inline-grid; place-items: center; font-size: 12px; color: var(--dim); }
+  textarea, input[type=number], input[type=date], input[type=text] { background: #0c0e12; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: inherit; }
+  textarea { width: 100%; min-height: 58px; resize: vertical; }
+  input[type=number] { width: 96px; }
+  button { font: inherit; border-radius: 9px; border: 1px solid var(--line); background: var(--chip); color: var(--text); padding: 7px 13px; cursor: pointer; }
+  button:hover { border-color: #3a4152; }
+  button.primary { background: #2b3a63; border-color: #3b5191; }
+  button.go { background: #1d4d33; border-color: #2c7a4f; }
+  button.danger { background: #4a1f24; border-color: #7a2c35; }
+  button:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  .check { display: grid; grid-template-columns: 24px 1fr; gap: 6px 8px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; margin: 6px 0; }
+  .check input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; }
+  .check .opts { grid-column: 2; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; color: var(--dim); font-size: 13px; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .ok { color: var(--green); } .bad { color: var(--red); } .wait { color: var(--amber); }
+  .doc { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 6px 0; }
+  .doc .top { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .doc ul, .steps { list-style: none; padding: 0; margin: 6px 0 0; font-size: 13px; }
+  .doc li, .steps li { padding: 2px 0; }
+  .result { border-radius: 12px; padding: 12px 14px; margin: 8px 0; border: 1px solid var(--line); }
+  .result.good { border-color: #2c7a4f; background: #10261a; }
+  .result.fail { border-color: #7a2c35; background: #2a1215; }
+  .big { font-size: 17px; font-weight: 600; }
+  .log { font-size: 12.5px; color: var(--dim); max-height: 190px; overflow: auto; border-top: 1px solid var(--line); margin-top: 14px; padding-top: 8px; }
+  .log div { padding: 2px 0; }
+  .log a, .result a { color: var(--blue); }
+  .confirm { border: 1px solid var(--amber); background: #2a2210; border-radius: 12px; padding: 12px; margin: 8px 0; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; margin: 2px 4px 2px 0; }
+  .hidden { display: none; }
+  .bar { height: 6px; background: var(--chip); border-radius: 4px; overflow: hidden; margin: 6px 0; }
+  .bar div { height: 100%; width: 0; background: var(--green); transition: width .3s; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔑 KeyProof</h1>
+  <span class="tag">Prove you qualify for a flat without showing your documents</span>
+  <span class="spacer"></span>
+  <span id="modeAi" class="badge">AI</span>
+  <span id="modeRgb" class="badge">RGB</span>
+  <a href="/" style="color:#7aa2ff">Simple view</a> <a href="/wallets.html" style="color:#7aa2ff">Wallets</a>
+  <button id="resetBtn" title="Start the demo again">Reset demo</button>
+</header>
+
+<main>
+  <!-- ============================ LANDLORD ============================ -->
+  <section class="side landlord">
+    <h2>Landlord</h2>
+    <div class="sub">Laptop of the landlord. Sees only ✓ or ✗, never the documents.</div>
+
+    <h3><span class="n">1</span> What do you need from a tenant?</h3>
+    <textarea id="llText" placeholder="e.g. Student in Turin, earns at least 1500 a month, adult, parents as guarantor">Adult student in Turin, earns at least 1500 a month, studying until at least 2027-07-31</textarea>
+    <div class="row"><button id="aiBtn">Fill the form with local AI</button><span id="aiNote" class="muted"></span></div>
+
+    <div id="checks">
+      <label class="check"><input type="checkbox" data-c="identity"><div><b>Identity, 18+</b> <span class="muted">same person on every document</span></div></label>
+      <label class="check"><input type="checkbox" data-c="income"><div><b>Monthly income</b></div>
+        <div class="opts">at least € <input type="number" id="minIncome" min="0" step="50"> per month</div></label>
+      <label class="check"><input type="checkbox" data-c="occupation"><div><b>Occupation</b></div>
+        <div class="opts"><label><input type="checkbox" id="allowStudent"> student</label>
+          <label><input type="checkbox" id="allowEmployed"> employed</label>
+          lasting until <input type="date" id="leaseEnd"></div></label>
+      <label class="check"><input type="checkbox" data-c="savings"><div><b>Savings</b></div>
+        <div class="opts">at least € <input type="number" id="minSavings" min="0" step="100"></div></label>
+      <label class="check"><input type="checkbox" data-c="guarantor"><div><b>Guarantor's income</b></div>
+        <div class="opts">at least € <input type="number" id="minGuarantor" min="0" step="50"> per month</div></label>
+    </div>
+    <div class="row">Rent € <input type="number" id="rent" value="550"> Deposit € <input type="number" id="deposit" value="1100">
+      <button id="publishBtn" class="primary">Publish request</button></div>
+
+    <h3><span class="n">2</span> Approvals received</h3>
+    <div id="llInbox" class="muted">No request published yet.</div>
+
+    <h3><span class="n">3</span> Deposit</h3>
+    <div id="llDeposit" class="muted">My agent asks for the deposit automatically after a valid approval.</div>
+    <div class="log" id="llLog"></div>
+  </section>
+
+  <!-- ============================ TENANT ============================ -->
+  <section class="side tenant">
+    <h2>Tenant</h2>
+    <div class="sub">Laptop of the tenant. Documents never leave this device.</div>
+
+    <h3><span class="n">1</span> The landlord asks for</h3>
+    <div id="tnRequest" class="muted">Waiting for the landlord to publish a request.</div>
+
+    <h3><span class="n">2</span> Add your signed documents</h3>
+    <div class="row">
+      <input type="file" id="fileIn" accept="application/pdf" multiple>
+      <button id="samplesBtn">Use demo documents</button>
+      <button id="fakeBtn" class="danger">Try an edited (fake) PDF</button>
+    </div>
+    <div id="tnDocs"></div>
+
+    <h3><span class="n">3</span> Make a private proof and send it</h3>
+    <div id="tnPre" class="muted">Add documents first.</div>
+    <div class="row"><button id="proveBtn" class="go" disabled>Create zero-knowledge proof</button><span id="proveNote" class="muted"></span></div>
+    <div class="bar hidden" id="proveBar"><div></div></div>
+    <div id="tnProof"></div>
+
+    <h3><span class="n">4</span> Deposit</h3>
+    <div id="tnDeposit" class="muted">Nothing to pay yet.</div>
+    <div class="muted" id="tnBal"></div>
+    <div class="log" id="tnLog"></div>
+  </section>
+</main>
+
+<script src="zk/snarkjs.min.js"></script>
+<script src="zk/keyproof.js"></script>
+<script>
+const Z = window.KeyProofZK;
+const $ = (id) => document.getElementById(id);
+const LABEL = { identity: "Identity, 18+", income: "Monthly income", occupation: "Occupation",
+                savings: "Savings", guarantor: "Guarantor's income" };
+let S = null;            // last /api/state
+let proofBundle = null;  // tenant's proof, before sending
+let verifying = false, verifiedAsset = null;
+let vkCache = null, dummyCache = null;
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const eur = (n) => "€" + Number(n).toLocaleString("en-US");
+
+// ------------------------------------------------------------------ landlord: form
+function readForm() {
+  const checks = {};
+  document.querySelectorAll("#checks input[data-c]").forEach((el) => (checks[el.dataset.c] = el.checked));
+  return { checks, minIncome: +$("minIncome").value || 0, allowStudent: $("allowStudent").checked,
+           allowEmployed: $("allowEmployed").checked, leaseEnd: $("leaseEnd").value,
+           minSavings: +$("minSavings").value || 0, minGuarantor: +$("minGuarantor").value || 0 };
+}
+function fillForm(r) {
+  document.querySelectorAll("#checks input[data-c]").forEach((el) => (el.checked = !!r.checks[el.dataset.c]));
+  $("minIncome").value = r.minIncome || ""; $("minSavings").value = r.minSavings || ""; $("minGuarantor").value = r.minGuarantor || "";
+  $("allowStudent").checked = !!r.allowStudent; $("allowEmployed").checked = !!r.allowEmployed; $("leaseEnd").value = r.leaseEnd || "";
+}
+$("aiBtn").onclick = async () => {
+  $("aiNote").textContent = "thinking locally…";
+  const t0 = performance.now();
+  try {
+    const out = await api("/api/landlord/parse", { text: $("llText").value });
+    fillForm(out.rules);
+    $("aiNote").textContent = (out.source === "qvac" ? "Filled by the local AI (QVAC)" : "Filled by keyword rules") +
+      ` in ${((performance.now() - t0) / 1000).toFixed(1)} s. Check the boxes, then publish.`;
+  } catch (e) { $("aiNote").textContent = "AI error: " + e.message; }
+};
+$("publishBtn").onclick = async () => {
+  const rules = readForm();
+  if (!Object.values(rules.checks).some(Boolean)) return alert("Tick at least one check.");
+  proofBundle = null; verifiedAsset = null; $("tnProof").innerHTML = "";
+  await api("/api/landlord/publish", { rules, rent: $("rent").value, deposit: $("deposit").value });
+  refresh();
+};
+
+// ------------------------------------------------------------------ tenant: documents
+async function uploadFiles(files) {
+  for (const f of files) {
+    const buf = new Uint8Array(await f.arrayBuffer());
+    let bin = ""; buf.forEach((b) => (bin += String.fromCharCode(b)));
+    await api("/api/tenant/upload", { filename: f.name, pdf: btoa(bin) }).then(showUpload);
+  }
+  refresh();
+}
+let lastRejected = null;
+function showUpload(entry) { if (!entry.ok) lastRejected = entry; else lastRejected = null; }
+$("fileIn").onchange = (e) => uploadFiles(e.target.files);
+$("samplesBtn").onclick = async () => {
+  for (const n of ["1_identity.pdf", "2_income.pdf", "3_enrolment.pdf", "4_savings.pdf", "5_guarantor.pdf"])
+    showUpload(await api("/api/tenant/sample", { name: n }));
+  refresh();
+};
+$("fakeBtn").onclick = async () => { showUpload(await api("/api/tenant/sample", { name: "FAKE_income_edited.pdf" })); refresh(); };
+
+function docHtml(d, rejected) {
+  const pills = d.checks.map((c) => `<span class="pill ${c.ok ? "ok" : "bad"}" title="${esc(c.detail)}">${c.ok ? "✓" : "✗"} ${esc(c.check)}</span>`).join("");
+  const failed = d.checks.find((c) => !c.ok);
+  const what = d.slot ? LABEL[d.slot] : "document";
+  return `<div class="doc"><div class="top"><span>${rejected ? "⛔" : "📄"} <b>${esc(d.file)}</b> <span class="muted">${esc(what)}${d.issuer ? " · " + esc(d.issuer) : ""}</span></span>
+    <span class="${d.ok ? "ok" : "bad"}">${d.ok ? "signature valid" : "REJECTED"}</span></div><div>${pills}</div>
+    ${failed ? `<div class="bad big">${esc(failed.detail)}</div>` : ""}</div>`;
+}
+
+// ------------------------------------------------------------------ tenant: proof
+function tenantCards() {
+  const cards = {};
+  for (const [slot, d] of Object.entries(S.tenant.docs)) cards[slot] = d.card;
+  return cards;
+}
+$("proveBtn").onclick = async () => {
+  const req = Z.publicRequest(S.request.rules);
+  dummyCache = dummyCache || (await (await fetch("zk/dummy_card.json")).json());
+  const input = Z.circuitInput(req, tenantCards(), dummyCache);
+  $("proveBtn").disabled = true; $("proveBar").classList.remove("hidden");
+  const bar = $("proveBar").firstElementChild; let pct = 0;
+  const tick = setInterval(() => { pct = Math.min(95, pct + 3); bar.style.width = pct + "%"; }, 250);
+  const t0 = performance.now();
+  $("proveNote").textContent = "Proving on this laptop… (the documents stay here)";
+  try {
+    const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, "zk/keyproof.wasm", "zk/keyproof_final.zkey");
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    bar.style.width = "100%";
+    proofBundle = { proof, publicSignals };
+    $("proveNote").textContent = `Proof ready in ${secs} s.`;
+    const kb = (JSON.stringify(proof).length / 1024).toFixed(1);
+    $("tnProof").innerHTML = `<div class="result good"><div class="big">Proof ready (${kb} KB)</div>
+      <div class="muted">It proves every ticked check passes on documents signed by trusted issuers.
+      It does <b>not</b> contain your name, income, savings, birth date or any document.</div>
+      <div class="row"><button id="sendBtn" class="go">Send approval to the landlord via RGB</button></div></div>`;
+    $("sendBtn").onclick = sendApproval;
+  } catch (e) {
+    $("proveNote").textContent = "";
+    $("tnProof").innerHTML = `<div class="result fail"><div class="big">No proof possible</div><div class="muted">At least one check fails, so the math does not allow a proof. (${esc(e.message || e)})</div></div>`;
+  } finally { clearInterval(tick); $("proveBtn").disabled = false; }
+};
+async function sendApproval() {
+  if (!confirm("Send the approval token to the landlord on Bitcoin (RGB)? It only contains the proof.")) return;
+  $("sendBtn").disabled = true;
+  try { await api("/api/tenant/send", proofBundle); } catch (e) { alert(e.message); $("sendBtn").disabled = false; }
+  refresh();
+}
+
+// ------------------------------------------------------------------ landlord: verify what arrived
+async function landlordCheck() {
+  if (verifying || !S.request || !S.tenant.approval) return;
+  const box = await api("/api/landlord/inbox");
+  if (!box.arrived) {
+    $("llInbox").innerHTML = `<span class="wait">⏳ An approval token is on its way to my RGB wallet (${esc(box.status || "settling")})…</span>`;
+    return;
+  }
+  if (verifiedAsset === box.asset_id) return;
+  const prev = S.landlord.result;
+  if (prev && prev.ok && prev.asset_id === box.asset_id && $("llInbox").dataset.asset === box.asset_id) return;
+  verifying = true;
+  try {
+    vkCache = vkCache || (await (await fetch("zk/verification_key.json")).json());
+    const { proof, publicSignals } = box.proof;
+    const mine = Z.publicRequest(S.request.rules);
+    const steps = [];
+    steps.push(["RGB token received and validated by my wallet", true, box.asset_id.slice(0, 28) + "…"]);
+    steps.push(["Proof matches the hash committed in the RGB contract", box.digest_ok, ""]);
+    const zkOk = await snarkjs.groth16.verify(vkCache, publicSignals, proof);
+    steps.push(["Zero-knowledge proof is mathematically valid", zkOk, ""]);
+    // the proof must use MY rules, not easier ones
+    const N = 5, off = 1 + N + 2 * N;
+    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId"];
+    const enabledOk = mine.enabled.every((e, i) => String(e) === publicSignals[1 + i]);
+    const rulesOk = enabledOk && names.every((k, i) => String(mine[k]) === publicSignals[off + i]);
+    steps.push(["Proof uses exactly my rules and my request number", rulesOk, ""]);
+    // every ticked check must be signed by an issuer I trust for that kind of document
+    let issuersOk = true; const usedIssuers = [];
+    mine.enabled.forEach((e, i) => {
+      if (!e) return;
+      const ax = publicSignals[1 + N + i], ay = publicSignals[1 + 2 * N + i];
+      const iss = S.trusted.find((t) => t.zk[0] === ax && t.zk[1] === ay && t.docTypes.includes(i + 1));
+      if (!iss) issuersOk = false; else usedIssuers.push(`${LABEL[Z.SLOTS[i]]}: ${iss.name}`);
+    });
+    steps.push(["Every document was signed by a trusted issuer", issuersOk, usedIssuers.join(" · ")]);
+    const ok = steps.every((s) => s[1]);
+    const rows = Z.SLOTS.map((s, i) => (mine.enabled[i] ? `<div class="big ${ok ? "ok" : "bad"}">${ok ? "✓" : "✗"} ${LABEL[s]}${ruleText(s, S.request.rules)}</div>` : "")).join("");
+    $("llInbox").innerHTML = `<div class="result ${ok ? "good" : "fail"}">${rows}
+      <ul class="steps">${steps.map((s) => `<li class="${s[1] ? "ok" : "bad"}">${s[1] ? "✓" : "✗"} ${esc(s[0])}${s[2] ? ` <span class="muted">(${esc(s[2])})</span>` : ""}</li>`).join("")}</ul>
+      <div class="muted">What I learned about the tenant: only the lines above. No name, no amounts, no documents.</div></div>`;
+    verifiedAsset = box.asset_id; $("llInbox").dataset.asset = box.asset_id;
+    await api("/api/landlord/result", { ok, asset_id: box.asset_id, reason: steps.filter((s) => !s[1]).map((s) => s[0]).join("; ") });
+  } finally { verifying = false; }
+}
+function ruleText(slot, r) {
+  if (slot === "income") return ` ≥ ${eur(r.minIncome)}/month`;
+  if (slot === "savings") return ` ≥ ${eur(r.minSavings)}`;
+  if (slot === "guarantor") return ` ≥ ${eur(r.minGuarantor)}/month`;
+  if (slot === "occupation") return `: ${[r.allowStudent && "student", r.allowEmployed && "employed"].filter(Boolean).join(" or ")}${r.leaseEnd ? ", until " + r.leaseEnd : ""}`;
+  return "";
+}
+
+// ------------------------------------------------------------------ deposit
+async function pay(yes) { try { await api("/api/tenant/pay", { yes }); } catch (e) { alert(e.message); } refresh(); }
+
+// ------------------------------------------------------------------ render
+function logHtml(items) {
+  return items.map((l) => `<div>${l.t} · ${esc(l.text)}${l.link ? ` <a href="${l.link}" target="_blank" rel="noopener">view tx</a>` : ""}</div>`).join("");
+}
+function render() {
+  $("modeAi").textContent = S.mode.ai === "qvac" ? "AI: QVAC local model" : "AI: keyword rules";
+  $("modeAi").className = "badge" + (S.mode.ai === "qvac" ? " real" : "");
+  $("modeRgb").textContent = S.mode.rgb === "real" ? "RGB: Bitcoin Mutinynet (real)" : "RGB: simulated";
+  $("modeRgb").className = "badge" + (S.mode.rgb === "real" ? " real" : "");
+
+  const req = S.request;
+  // tenant: request
+  if (req) {
+    const r = req.rules;
+    $("tnRequest").innerHTML = Z.SLOTS.filter((s) => r.checks[s]).map((s) => `<span class="pill">${LABEL[s]}${ruleText(s, r)}</span>`).join("") +
+      `<div class="muted">Rent ${eur(req.rent)}/month · deposit ${eur(req.deposit)} · request #${r.requestId.slice(-6)}</div>`;
+  } else $("tnRequest").textContent = "Waiting for the landlord to publish a request.";
+
+  // tenant: documents
+  const docs = Object.values(S.tenant.docs);
+  $("tnDocs").innerHTML = (lastRejected ? docHtml(lastRejected, true) : "") + docs.map((d) => docHtml(d)).join("");
+
+  // tenant: precheck
+  if (req && docs.length) {
+    const pre = Z.precheck(Z.publicRequest(req.rules), tenantCards());
+    const allOk = pre.length && pre.every((p) => p.ok);
+    $("tnPre").innerHTML = pre.map((p) => `<div class="${p.ok ? "ok" : "bad"}">${p.ok ? "✓" : "✗"} ${LABEL[p.slot]}: ${esc(p.why)}</div>`).join("") +
+      (allOk ? "" : `<div class="muted">You can still try: the proof will refuse to be created.</div>`);
+    $("proveBtn").disabled = !!S.tenant.approval;
+  } else { $("tnPre").textContent = req ? "Add documents first." : "Waiting for a request."; $("proveBtn").disabled = true; }
+
+  // tenant: approval status
+  const ap = S.tenant.approval;
+  if (ap) {
+    $("tnProof").innerHTML = `<div class="result ${ap.status === "settled" ? "good" : ""}"><b>Approval token sent</b> ·
+      <span class="${ap.status === "settled" ? "ok" : "wait"}">${ap.status}</span>
+      <div class="muted">RGB asset ${esc(ap.asset_id.slice(0, 32))}…</div></div>`;
+  }
+
+  // landlord inbox
+  if (!req) $("llInbox").textContent = "No request published yet.";
+  else if (!ap) $("llInbox").innerHTML = `<span class="muted">Request #${req.rules.requestId.slice(-6)} published. Waiting for a tenant.</span>`;
+  else landlordCheck();
+
+  // deposit
+  const pp = S.tenant.pending_payment, td = S.tenant.deposit, ld = S.landlord.deposit;
+  if (pp) {
+    $("tnDeposit").innerHTML = `<div class="confirm"><div class="big">Pay ${pp.amount} tUSDT deposit to the landlord?</div>
+      <div class="muted">Your agent prepared this after the landlord's approval. Nothing moves until you confirm.</div>
+      <div class="row"><button class="go" onclick="pay(true)">Confirm</button><button onclick="pay(false)">Cancel</button></div></div>`;
+  } else if (td) $("tnDeposit").innerHTML = `Deposit ${td.amount} tUSDT · <span class="${td.status === "settled" ? "ok" : "wait"}">${td.status}</span>`;
+  else $("tnDeposit").textContent = "Nothing to pay yet.";
+  if (ld) $("llDeposit").innerHTML = ld.status === "requested" ? `<span class="wait">Requested ${ld.amount} tUSDT, waiting for the tenant to confirm.</span>`
+      : `Deposit ${ld.amount} tUSDT · <span class="${ld.status === "settled" ? "ok" : "wait"}">${ld.status === "settled" ? "received ✓" : ld.status}</span>`;
+  else $("llDeposit").textContent = "My agent asks for the deposit automatically after a valid approval.";
+
+  $("tnBal").textContent = `Wallet: tenant ${S.balances.tenant ?? 0} tUSDT · landlord ${S.balances.landlord ?? 0} tUSDT`;
+  $("tnLog").innerHTML = logHtml(S.tenant.log);
+  $("llLog").innerHTML = logHtml(S.landlord.log);
+}
+async function refresh() { try { S = await api("/api/state"); render(); } catch (e) { console.error(e); } }
+$("resetBtn").onclick = async () => { await api("/api/reset", {}); proofBundle = null; verifiedAsset = null; lastRejected = null; $("tnProof").innerHTML = ""; $("llInbox").innerHTML = ""; refresh(); };
+refresh();
+setInterval(refresh, 2500);
+</script>
+</body>
+</html>

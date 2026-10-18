@@ -146,3 +146,76 @@ if __name__ == "__main__":
               "Rent is 600, tenant must earn 3 times the rent",
               "Anyone over 18 with a job contract until 2027-06-30"]:
         print(s, "->", landlord_rules(s))
+
+
+# ---------------------------------------------------------------------------
+# Helper texts: the AI explains, in the user's language. It never decides anything:
+# every fact comes from code (the request, the signature checks, the proof result).
+
+LANGS = {"en": "English", "it": "Italian", "tr": "Turkish"}
+
+EXPLAIN_PROMPT = """You are a kind helper inside KeyProof, an app for renting a flat.
+Write for an older person who is not technical: short sentences, everyday words, no jargon
+(never say: hash, ZK, zero-knowledge, RGB, token, blockchain, cryptography, certificate).
+Use ONLY the facts given. Never invent numbers, names, documents or results.
+Write in {lang}. Reply with plain text only, at most {n} sentences."""
+
+TASKS = {
+    "request": ("The landlord's requirements are in 'facts'. Explain to the tenant what the landlord asks for, "
+                "and for each item which official document they need and where they usually get it "
+                "(bank, municipality/comune, university, employer). Mention that the documents stay on their "
+                "computer and the landlord only sees yes or no.", 5),
+    "rejected": ("A document was refused. 'facts' says which document and why. Explain kindly what this means "
+                 "and what the person can do next (for example ask the issuer for a new signed copy).", 3),
+    "accepted": ("A document was checked and accepted. 'facts' says which one and who issued it. "
+                 "Confirm it in one or two friendly sentences.", 2),
+    "summary": ("Write a short summary for the landlord. 'facts' lists which checks passed. "
+                "Say clearly that they did not see the tenant's documents, salary or personal details, "
+                "and what the next step is (the deposit).", 3),
+    "deposit": ("Write the deposit request message the landlord's assistant sends to the tenant. "
+                "'facts' has the amount. Polite, two sentences.", 2),
+}
+
+FALLBACK = {
+    "request": {"en": "The landlord asks for: {items}. You will need official signed documents from your bank, your "
+                      "municipality and your university or employer. They stay on your computer: the landlord only "
+                      "sees yes or no.",
+                "it": "Il proprietario chiede: {items}. Ti servono documenti ufficiali firmati dalla banca, dal comune "
+                      "e dall'università o dal datore di lavoro. Restano sul tuo computer: il proprietario vede solo sì o no.",
+                "tr": "Ev sahibi şunları istiyor: {items}. Bankanızdan, belediyeden ve üniversiteniz ya da "
+                      "işvereninizden imzalı resmi belgelere ihtiyacınız var. Belgeler bilgisayarınızda kalır: "
+                      "ev sahibi yalnızca evet ya da hayır görür."},
+    "rejected": {"en": "This document could not be accepted: {why}. Please ask the issuer for a new signed copy.",
+                 "it": "Questo documento non può essere accettato: {why}. Chiedi all'ente una nuova copia firmata.",
+                 "tr": "Bu belge kabul edilemedi: {why}. Lütfen kurumdan yeni imzalı bir kopya isteyin."},
+    "accepted": {"en": "Your {doc} from {issuer} is original and was accepted.",
+                 "it": "Il tuo documento ({doc}) di {issuer} è originale ed è stato accettato.",
+                 "tr": "{issuer} tarafından verilen belgeniz ({doc}) orijinal ve kabul edildi."},
+    "summary": {"en": "The tenant meets all your requirements: {items}. You did not see any document or personal "
+                      "detail. Next step: the deposit.",
+                "it": "L'inquilino soddisfa tutti i requisiti: {items}. Non hai visto documenti né dati personali. "
+                      "Prossimo passo: il deposito.",
+                "tr": "Kiracı tüm şartlarınızı karşılıyor: {items}. Hiçbir belge ya da kişisel bilgi görmediniz. "
+                      "Sonraki adım: depozito."},
+    "deposit": {"en": "Good news: you are approved. Please pay the deposit of {amount} to confirm the flat.",
+                "it": "Buone notizie: sei stato approvato. Paga il deposito di {amount} per confermare l'appartamento.",
+                "tr": "Müjde: onaylandınız. Daireyi onaylamak için {amount} depozitoyu ödeyin."},
+}
+
+
+def explain(kind, lang, facts):
+    """Plain-language helper text. Falls back to fixed sentences if the model is off."""
+    lang = lang if lang in LANGS else "en"
+    task, n = TASKS[kind]
+    if not USE_FAKE:
+        try:
+            out = chat(EXPLAIN_PROMPT.format(lang=LANGS[lang], n=n),
+                       task + "\nfacts: " + json.dumps(facts, ensure_ascii=False), max_tokens=260)
+            out = re.sub(r"\s+", " ", out).strip().strip('"')
+            if out:
+                return {"text": out, "source": "qvac", "model": LAST_MODEL["name"]}
+        except Exception as e:
+            print(f"QVAC explain failed: {e}", flush=True)
+    vals = {"items": ", ".join(facts.get("items", [])), "why": facts.get("why", ""),
+            "doc": facts.get("doc", ""), "issuer": facts.get("issuer", ""), "amount": facts.get("amount", "")}
+    return {"text": FALLBACK[kind][lang].format(**vals), "source": "fixed"}

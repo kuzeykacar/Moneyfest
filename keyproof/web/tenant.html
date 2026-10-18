@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof – Tenant</title>
+<link rel="stylesheet" href="simple.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="/">🔑 KeyProof</a>
+    <span class="who" id="who"></span>
+    <span class="sp"></span>
+    <span id="langBox"></span>
+  </header>
+  <div class="progress" id="progress"><div></div><div></div><div></div><div></div></div>
+  <div class="stepinfo" id="stepinfo"></div>
+  <main id="main" aria-live="polite"></main>
+  <footer class="foot">
+    <a href="/landlord.html" id="fLandlord"></a>
+    <a href="/wallets.html" id="fWallets"></a>
+    <a href="/dev.html" id="fDev"></a>
+    <button id="fReset"></button>
+  </footer>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box">
+  <h2 id="mTitle"></h2><p id="mText" class="dim"></p>
+  <div class="row" style="margin-top:16px"><button class="btn ok" id="mYes"></button><button class="btn secondary" id="mNo"></button></div>
+</div></div>
+
+<script src="zk/snarkjs.min.js"></script>
+<script src="zk/keyproof.js"></script>
+<script src="simple.js"></script>
+<script>
+const { api, esc, eur, $, t } = KP;
+const Z = window.KeyProofZK;
+let S = null;                 // server state
+let view = 1;                 // 1 request, 2 documents, 3 proof; 4 = after sending (automatic)
+let seenRequest = null;
+let rejected = null;          // last refused upload {entry, help}
+let proof = null, proving = false, proofError = null;
+let lastSig = "";
+
+function ask(title, text, yesLabel, onYes) {
+  $("mTitle").textContent = title; $("mText").textContent = text;
+  $("mYes").textContent = yesLabel; $("mNo").textContent = t("cancel");
+  $("modal").style.display = "grid"; $("mYes").focus();
+  $("mYes").onclick = () => { $("modal").style.display = "none"; onYes(); };
+  $("mNo").onclick = () => { $("modal").style.display = "none"; };
+}
+
+function needed() { return S && S.request ? KP.ticked(S.request.rules) : []; }
+function docsReady() { return needed().every((s) => S.tenant.docs[s] && S.tenant.docs[s].ok); }
+
+function setProgress(step, of) {
+  [...$("progress").children].forEach((d, i) => d.classList.toggle("on", i < step));
+  $("stepinfo").textContent = step ? t("step", { a: step, b: of }) : "";
+}
+
+// ------------------------------------------------------------ screens
+function screenWaiting() {
+  setProgress(0, 4);
+  return `<div class="card"><h1>${t("t_wait_title")}</h1><p class="dim">${t("t_wait_text")}</p>
+          <p><span class="spinner"></span></p></div>`;
+}
+
+function screenRequest() {
+  setProgress(1, 4);
+  const r = S.request.rules;
+  const items = KP.ticked(r).map((s) => `<div class="item"><div class="icon">✔︎</div><div class="body"><div class="title">${esc(KP.ruleText(s, r))}</div></div></div>`).join("");
+  return `<div class="card"><h1>${t("t1_title")}</h1>${items}
+            <p class="dim">${t("rent")}: <b>${eur(S.request.rent)}</b> · ${t("deposit")}: <b>${eur(S.request.deposit)}</b></p>
+            <div id="help1"></div>
+            <button class="btn block" id="next1">${t("t1_next")} →</button></div>`;
+}
+
+function screenDocs() {
+  setProgress(2, 4);
+  const rows = needed().map((s) => {
+    const d = S.tenant.docs[s];
+    const ok = d && d.ok;
+    return `<div class="item"><div class="icon ${ok ? "ok" : ""}">${ok ? "✓" : "📄"}</div><div class="body">
+        <div class="title">${t("d_" + s)}</div><div class="dim small">${t("s_" + s)}</div>
+        <div class="${ok ? "" : "dim"}" style="margin-top:4px">${ok ? "✓ " + esc(t("original", { issuer: d.issuer })) : t("missing")}</div>
+        ${ok ? "" : `<div class="actions row">
+            <label class="btn secondary">${t("choose")}<input type="file" accept="application/pdf" class="hidden" data-slot="${s}"></label>
+            <button class="btn link" data-sample="${s}">${t("use_demo")}</button></div>`}
+      </div></div>`;
+  }).join("");
+  const rej = rejected ? `<div class="notice bad"><b>⛔ ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
+                          <div id="helpRej">${KP.helperHtml(rejected.help, rejected.source)}</div>` : "";
+  return `<div class="card"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}${rows}
+            <div class="row" style="margin-top:12px"><button class="btn link" id="fake">${t("try_fake")}</button></div>
+            <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>`;
+}
+
+function screenProof() {
+  setProgress(3, 4);
+  const r = S.request.rules;
+  let inner;
+  if (proving) inner = `<div class="notice wait"><span class="spinner"></span> ${t("proving")}</div><div class="bar"><div id="pbar"></div></div>`;
+  else if (proof) inner = `<div class="notice ok"><b>✓ ${t("proof_ready")}</b></div>
+      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ok">✓</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      <button class="btn ok block" id="send" style="margin-top:14px">${t("send")} →</button>`;
+  else if (proofError) {
+    const pre = Z.precheck(Z.publicRequest(r), cards()).filter((p) => !p.ok);
+    inner = `<div class="notice bad"><b>${t("proof_none")}</b>${pre.map((p) => `<br>✗ ${esc(KP.ruleText(p.slot, r))}`).join("")}</div>
+             <button class="btn secondary block" id="back2">← ${t("t2_title")}</button>`;
+  } else inner = `<button class="btn block" id="prove">${t("make_proof")}</button>`;
+  return `<div class="card"><h1>${t("t3_title")}</h1><p class="dim">${t("t3_text")}</p>${inner}</div>`;
+}
+
+function screenAfter() {
+  setProgress(4, 4);
+  const ap = S.tenant.approval, pp = S.tenant.pending_payment, dep = S.tenant.deposit;
+  const res = S.landlord.result;
+  let html = `<div class="card"><h1>${ap.status === "settled" ? "✓ " + t("sent_ok") : t("send")}</h1>`;
+  if (ap.status !== "settled") html += `<div class="notice wait"><span class="spinner"></span> ${t("sent_wait")}</div>`;
+  else if (!res) html += `<div class="notice wait"><span class="spinner"></span> ${t("waiting_landlord")}</div>`;
+  html += `</div>`;
+  if (pp) {
+    html += `<div class="card"><h1>${t("t4_title")}</h1><div id="helpDep"></div>
+      <p class="big-result">${t("dep_q", { amount: eur(pp.amount) })}</p>
+      <div class="row"><button class="btn ok" id="pay">${t("pay", { amount: eur(pp.amount) })}</button>
+      <button class="btn secondary" id="nopay">${t("not_now")}</button></div></div>`;
+  } else if (dep) {
+    html += `<div class="card"><h1>${t("t4_title")}</h1><div class="notice ${dep.status === "settled" ? "ok" : "wait"}">
+      ${dep.status === "settled" ? "<b>✓ " + t("dep_ok") + "</b>" : `<span class="spinner"></span> ${t("dep_wait")}`}</div></div>`;
+  }
+  const links = S.tenant.log.filter((l) => l.link).map((l) => `<li>${esc(l.text)} – <a href="${l.link}" target="_blank" rel="noopener">${l.link.split("/").pop().slice(0, 16)}…</a></li>`).join("");
+  html += `<details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>${links}</ul>
+           <p>Approval token: ${esc(ap.asset_id)}</p></div></details>`;
+  return html;
+}
+
+// ------------------------------------------------------------ actions
+function cards() { const c = {}; for (const [s, d] of Object.entries(S.tenant.docs)) c[s] = d.card; return c; }
+
+async function upload(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  let bin = ""; buf.forEach((b) => (bin += String.fromCharCode(b)));
+  handleUpload(await api("/api/tenant/upload", { filename: file.name, pdf: btoa(bin) }));
+}
+async function handleUpload(entry) {
+  if (entry.ok) { rejected = null; proof = null; proofError = null; }
+  else {
+    const failed = entry.checks.find((c) => !c.ok) || { detail: "no digital signature" };
+    rejected = { entry, reason: failed.detail, help: "", source: "" };
+    render(true);
+    const h = await KP.explain("rejected", { document: entry.file, why: failed.detail });
+    if (rejected && rejected.entry === entry) { rejected.help = h.text; rejected.source = h.source; }
+  }
+  await refresh(true);
+}
+
+async function makeProof() {
+  proving = true; proofError = null; render(true);
+  let pct = 0; const tick = setInterval(() => { pct = Math.min(95, pct + 3); const b = $("pbar"); if (b) b.style.width = pct + "%"; }, 300);
+  try {
+    const req = Z.publicRequest(S.request.rules);
+    const dummy = await (await fetch("zk/dummy_card.json")).json();
+    proof = await snarkjs.groth16.fullProve(Z.circuitInput(req, cards(), dummy), "zk/keyproof.wasm", "zk/keyproof_final.zkey");
+  } catch (e) { proofError = String(e.message || e); proof = null; }
+  clearInterval(tick); proving = false; render(true);
+}
+
+function bind() {
+  const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
+  on("next1", () => { view = 2; render(true); });
+  on("next2", () => { view = 3; render(true); });
+  on("back2", () => { view = 2; proofError = null; render(true); });
+  on("prove", makeProof);
+  on("fake", async () => handleUpload(await api("/api/tenant/sample", { name: "FAKE_income_edited.pdf" })));
+  on("send", () => ask(t("send_q"), t("send_detail"), t("yes_send"), async () => {
+    try { await api("/api/tenant/send", proof); } catch (e) { alert(e.message); }
+    refresh(true);
+  }));
+  on("pay", () => ask(t("dep_q", { amount: eur(S.tenant.pending_payment.amount) }), "", t("pay", { amount: eur(S.tenant.pending_payment.amount) }),
+    async () => { try { await api("/api/tenant/pay", { yes: true }); } catch (e) { alert(e.message); } refresh(true); }));
+  on("nopay", async () => { await api("/api/tenant/pay", { yes: false }); refresh(true); });
+  document.querySelectorAll("input[type=file][data-slot]").forEach((el) => (el.onchange = () => el.files[0] && upload(el.files[0])));
+  document.querySelectorAll("[data-sample]").forEach((el) => (el.onclick = async () => handleUpload(await api("/api/tenant/sample", { name: KP.SAMPLE[el.dataset.sample] }))));
+}
+
+// assistant texts (local AI), loaded after the screen is shown
+async function fillHelpers() {
+  if ($("help1") && S.request) {
+    const r = S.request.rules;
+    const h = await KP.explain("request", { items: KP.ticked(r).map((s) => KP.ruleText(s, r)) }, "req" + r.requestId);
+    if ($("help1")) $("help1").innerHTML = KP.helperHtml(h.text, h.source);
+  }
+  if ($("helpDep") && S.tenant.pending_payment) {
+    const h = await KP.explain("deposit", { amount: eur(S.tenant.pending_payment.amount) }, "dep" + S.request.rules.requestId);
+    if ($("helpDep")) $("helpDep").innerHTML = KP.helperHtml(h.text, h.source);
+  }
+}
+
+function render(force) {
+  if (!S) return;
+  if (S.request && seenRequest !== S.request.rules.requestId) { seenRequest = S.request.rules.requestId; view = 1; proof = null; proofError = null; rejected = null; }
+  const v = !S.request ? 0 : S.tenant.approval ? 4 : view;
+  const sig = JSON.stringify([v, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(),
+    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError]);
+  if (!force && sig === lastSig) return;
+  lastSig = sig;
+  $("main").innerHTML = v === 0 ? screenWaiting() : v === 1 ? screenRequest() : v === 2 ? screenDocs() : v === 3 ? screenProof() : screenAfter();
+  bind(); fillHelpers();
+}
+
+function labels() {
+  $("who").textContent = "👤 " + t("tenant");
+  $("fLandlord").textContent = t("landlord") + " →"; $("fWallets").textContent = t("wallets");
+  $("fDev").textContent = t("dev"); $("fReset").textContent = t("reset");
+}
+async function refresh(force) { try { S = await api("/api/state"); render(force); } catch (e) { console.error(e); } }
+$("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
+$("fReset").onclick = async () => { if (confirm(t("reset") + "?")) { await api("/api/reset", {}); proof = null; rejected = null; view = 1; refresh(true); } };
+labels(); refresh(true); setInterval(() => refresh(false), 2500);
+// keep the rejection helper text fresh once the AI answers
+setInterval(() => { if (rejected && rejected.help && $("helpRej") && !$("helpRej").innerHTML) $("helpRej").innerHTML = KP.helperHtml(rejected.help, rejected.source); }, 500);
+</script>
+</body>
+</html>

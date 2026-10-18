@@ -270,9 +270,22 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(n) or b"{}")
         path = self.path
+        if path == "/api/ai/explain":
+            try:
+                return self._send(200, ai.explain(body.get("kind", "request"), body.get("lang", "en"),
+                                                  body.get("facts", {})))
+            except Exception as e:
+                return self._send(400, {"error": str(e)})
+        if path == "/api/landlord/parse":
+            try:
+                return self._send(200, DEMO.parse(body.get("text", "")))
+            except Exception as e:
+                return self._send(400, {"error": str(e)})
         try:
             with DEMO.lock:
-                if path == "/api/landlord/parse":
+                if path == "/api/ai/explain":
+                    out = None
+                elif path == "/api/landlord/parse":
                     out = DEMO.parse(body.get("text", ""))
                 elif path == "/api/landlord/publish":
                     out = DEMO.publish(body["rules"], body.get("rent"), body.get("deposit"))
