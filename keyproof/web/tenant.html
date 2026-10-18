@@ -43,7 +43,7 @@ let view = 1;                 // 1 request, 2 documents, 3 proof; 4 = after send
 let seenRequest = null;
 let rejected = null;          // last refused upload {entry, help}
 let proof = null, proving = false, proofError = null;
-let lastSig = "";
+let lastSig = "", payError = "";
 let code = KP.normCode(KP.param("c")), codeError = false;
 
 function ask(title, text, yesLabel, onYes) {
@@ -126,7 +126,7 @@ function screenAfter() {
   html += line(ap.status === "settled" ? "ok" : "wait", ap.status === "settled" ? esc(t("sent_ok")) : `<span class="spinner"></span>&nbsp;${esc(t("sent_wait"))}`);
   if (ap.status === "settled") html += line(res ? (res.ok ? "ok" : "bad") : "wait", res ? esc(res.ok ? t("approved") : t("l_bad")) : `<span class="spinner"></span>&nbsp;${esc(t("waiting_landlord"))}`);
   if (pp) {
-    html += `<div id="helpDep"></div><p class="big-result">${t("dep_q", { amount: eur(pp.amount) })}</p>
+    html += `<div id="helpDep"></div>${payError ? `<div class="notice bad">${KP.icon("alert", 18)} ${esc(payError)}</div>` : ""}<p class="big-result">${t("dep_q", { amount: eur(pp.amount) })}</p>
       <div class="row"><button class="btn ok" id="pay">${t("pay", { amount: eur(pp.amount) })}</button>
       <button class="btn secondary" id="nopay">${t("not_now")}</button></div>`;
   } else if (dep) {
@@ -179,11 +179,16 @@ function bind() {
   on("prove", makeProof);
   on("fake", async () => handleUpload(await api("/api/tenant/sample", { name: "FAKE_income_edited.pdf" })));
   on("send", () => ask(t("send_q"), t("send_detail"), t("yes_send"), async () => {
-    try { await api("/api/tenant/send", proof); } catch (e) { alert(e.message); }
+    try { await api("/api/tenant/send", proof); } catch (e) { KP.alert(e.message); }
     refresh(true);
   }));
   on("pay", () => ask(t("dep_q", { amount: eur(S.tenant.pending_payment.amount) }), "", t("pay", { amount: eur(S.tenant.pending_payment.amount) }),
-    async () => { try { await api("/api/tenant/pay", { yes: true }); } catch (e) { alert(e.message); } refresh(true); }));
+    async () => {
+      payError = "";
+      try { await api("/api/tenant/pay", { yes: true }); }
+      catch (e) { payError = /not enough/i.test(e.message) ? t("pay_low", { have: (e.message.match(/\((\d+)/) || [])[1] || "?" }) : e.message; }
+      refresh(true);
+    }));
   on("nopay", async () => { await api("/api/tenant/pay", { yes: false }); refresh(true); });
   document.querySelectorAll("input[type=file][data-slot]").forEach((el) => (el.onchange = () => el.files[0] && upload(el.files[0])));
   document.querySelectorAll("[data-sample]").forEach((el) => (el.onclick = async () => handleUpload(await api("/api/tenant/sample", { name: KP.SAMPLE[el.dataset.sample] }))));
@@ -230,7 +235,7 @@ function render(force) {
   codeError = !!code && !valid;
   const v = !valid ? 0 : S.tenant.approval ? 4 : view;
   const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(),
-    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError,
+    S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError, payError,
     S.issuer && S.issuer.status]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
@@ -245,7 +250,7 @@ function labels() {
 }
 async function refresh(force) { try { S = await api("/api/state"); render(force); } catch (e) { console.error(e); } }
 $("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
-$("fReset").onclick = async () => { if (confirm(t("reset") + "?")) { await api("/api/reset", {}); proof = null; rejected = null; view = 1; refresh(true); } };
+$("fReset").onclick = async () => { if (await KP.confirm(t("reset") + "?", "", t("reset"))) { await api("/api/reset", {}); proof = null; rejected = null; view = 1; refresh(true); } };
 KP.logo(); labels(); refresh(true); setInterval(() => refresh(false), 2500);
 // keep the rejection helper text fresh once the AI answers
 setInterval(() => { if (rejected && rejected.help && $("helpRej") && !$("helpRej").innerHTML) $("helpRej").innerHTML = KP.helperHtml(rejected.help, rejected.source); }, 500);

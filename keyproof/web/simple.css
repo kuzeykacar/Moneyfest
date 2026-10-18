@@ -4,7 +4,7 @@
   --ink: #eef2f8; --dim: #9aa7bd; --faint: #64718a; --line: rgba(255, 255, 255, .07); --line2: rgba(255, 255, 255, .12);
   --brand: #3b82f6; --brand2: #60a5fa; --brand-ink: #ffffff;
   --ok: #34d399; --ok-bg: rgba(52, 211, 153, .12); --bad: #ff8f80; --bad-bg: rgba(255, 143, 128, .12);
-  --wait: #f2c46d; --wait-bg: rgba(242, 196, 109, .12); --focus: #f2c46d;
+  --wait: #f2c46d; --wait-bg: rgba(242, 196, 109, .12); --focus: rgba(96, 165, 250, .55);
   --radius: 22px; --shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 20px 50px -20px rgba(0, 0, 0, .6);
   color-scheme: dark;
 }

@@ -32,9 +32,9 @@ function render(force) {
       ${iss.assets.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div></details>` : ""}</div>`;
   $("send").onclick = async () => {
     const types = [...document.querySelectorAll("input[data-t]:checked")].map((e) => +e.dataset.t);
-    if (!types.length || !confirm(t("i_send") + "?")) return;
+    if (!types.length || !(await KP.confirm(t("i_send") + "?", "", t("i_send")))) return;
     busy = true; render(true);
-    try { await api("/api/issuer/send", { types }); } catch (e) { alert(e.message); }
+    try { await api("/api/issuer/send", { types }); } catch (e) { KP.alert(e.message); }
     busy = false; refresh(true);
   };
 }

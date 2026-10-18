@@ -22,6 +22,8 @@
 
   const T = {
     en: {
+      problem: "Something went wrong",
+      pay_low: "There is not enough money in your wallet for this deposit (you have {have}). Please add funds and try again.",
       share_title: "Share with tenants", share_text: "Send this link to people interested in your flat – for example in your Idealista listing or chat. They can also scan the QR code or type the code.",
       copy: "Copy link", copied: "Copied", code_label: "Application code", private_title: "Your private dashboard",
       private_text: "This page's address is your private key to see applications. Don't share it.", copy_private: "Copy my private link",
@@ -74,6 +76,8 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      problem: "Qualcosa è andato storto",
+      pay_low: "Non ci sono abbastanza fondi nel portafoglio per questo deposito (hai {have}). Aggiungi fondi e riprova.",
       share_title: "Condividi con gli inquilini", share_text: "Invia questo link alle persone interessate – ad esempio nell'annuncio o nella chat di Idealista. Possono anche scansionare il QR o digitare il codice.",
       copy: "Copia link", copied: "Copiato", code_label: "Codice di candidatura", private_title: "La tua pagina privata",
       private_text: "L'indirizzo di questa pagina è la tua chiave privata per vedere le candidature. Non condividerlo.", copy_private: "Copia il mio link privato",
@@ -126,6 +130,8 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      problem: "Bir sorun oluştu",
+      pay_low: "Cüzdanınızda bu depozito için yeterli para yok (mevcut: {have}). Lütfen bakiye ekleyip tekrar deneyin.",
       share_title: "Kiracılarla paylaşın", share_text: "Bu bağlantıyı dairenizle ilgilenenlere gönderin – örneğin Idealista ilanınızda veya sohbetinde. QR kodu tarayabilir ya da kodu yazabilirler.",
       copy: "Bağlantıyı kopyala", copied: "Kopyalandı", code_label: "Başvuru kodu", private_title: "Özel sayfanız",
       private_text: "Bu sayfanın adresi başvuruları görmeniz için özel anahtarınızdır. Paylaşmayın.", copy_private: "Özel bağlantımı kopyala",
@@ -255,5 +261,23 @@
     if (btn) { const old = btn.innerHTML; btn.innerHTML = S.icon("check", 16) + " " + S.t("copied"); setTimeout(() => (btn.innerHTML = old), 1500); }
   };
   S.qrSvg = (text) => { try { const q = qrcode(0, "M"); q.addData(text); q.make(); return q.createSvgTag(6, 2); } catch (e) { return ""; } };
+  // In-app dialogs (never the browser's white pop-ups)
+  function dialog(title, text, okLabel, cancelLabel, danger) {
+    return new Promise((resolve) => {
+      const m = document.createElement("div");
+      m.className = "modal"; m.style.display = "grid"; m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true");
+      m.innerHTML = `<div class="box"><h2 class="withicon">${S.icon(danger ? "alert" : "dot", 22)} ${S.esc(title)}</h2>
+        ${text ? `<p class="dim">${S.esc(text)}</p>` : ""}
+        <div class="row" style="margin-top:18px"><button class="btn ${danger ? "" : "ok"}" data-a="ok">${S.esc(okLabel)}</button>
+        ${cancelLabel ? `<button class="btn secondary" data-a="no">${S.esc(cancelLabel)}</button>` : ""}</div></div>`;
+      const done = (v) => { m.remove(); document.removeEventListener("keydown", key); resolve(v); };
+      const key = (e) => { if (e.key === "Escape") done(false); };
+      m.addEventListener("click", (e) => { const a = e.target.closest("[data-a]"); if (a) done(a.dataset.a === "ok"); else if (e.target === m) done(false); });
+      document.addEventListener("keydown", key);
+      document.body.appendChild(m); m.querySelector("[data-a=ok]").focus();
+    });
+  }
+  S.alert = (text, title) => dialog(title || S.t("problem"), text, "OK", null, true);
+  S.confirm = (title, text, okLabel) => dialog(title, text, okLabel || "OK", S.t("cancel"), false);
   window.KP = S;
 })();

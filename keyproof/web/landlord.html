@@ -222,7 +222,7 @@ async function refresh(force) {
   } catch (e) { console.error(e); }
 }
 $("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
-$("fReset").onclick = async () => { if (confirm(t("reset") + "?")) { await api("/api/reset", {}); draft = null; verdict = null; editing = true; aiNote = ""; refresh(true); } };
+$("fReset").onclick = async () => { if (await KP.confirm(t("reset") + "?", "", t("reset"))) { await api("/api/reset", {}); draft = null; verdict = null; editing = true; aiNote = ""; refresh(true); } };
 KP.logo(); labels(); refresh(true); setInterval(() => { refresh(false); if (S && S.tenant.approval && !verdict) verify(); }, 2500);
 </script>
 </body>
