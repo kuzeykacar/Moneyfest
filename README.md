@@ -25,7 +25,7 @@ Team **Moneyfest** · *Agentic Dollars on Bitcoin* hackathon · BLOX Turin, 17�
 11. [What's real today, what's next](#11-whats-real-today-whats-next)
 12. [Repository map](#12-repository-map)
 13. [Open-source projects we build on](#13-open-source-projects-we-build-on)
-14. [How we got here](#14-how-we-got-here) · [Security note](#security-note) · [Team](#team)
+14. [Security note](#security-note) · [Team](#team)
 
 ---
 
@@ -303,7 +303,7 @@ All demo people are fictional (Elena Rossi, Marco Rossi); all demo issuers are o
 | `keyproof/scripts/` | Double-click scripts: setup, run (demo/real), restart, AI, WDK, wallets |
 | `keyproof/docs/` | Pitch and jury Q&A, standalone verifier |
 | `scripts/` | QVAC install (`setup_ai.command`), shared by both projects |
-| `backend/`, `web/` | *Moneyfest Aid*, our earlier idea (see below) |
+| `backend/`, `web/` | *Moneyfest Aid*, an earlier prototype from the same hackathon |
 
 ## 13. Open-source projects we build on
 
@@ -320,18 +320,6 @@ All demo people are fictional (Elena Rossi, Marco Rossi); all demo issuers are o
 | [pyca/cryptography](https://github.com/pyca/cryptography), [asn1crypto](https://github.com/wbond/asn1crypto) (vendored) | PDF signatures, certificates |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (vendored) | QR codes |
 | [Playwright](https://playwright.dev) | Browser end-to-end tests |
-
-## 14. How we got here
-
-All work was done during the hackathon; nothing existed before kickoff.
-1. **Saturday morning:** a budgeting idea (no code).
-2. **Saturday afternoon:** *Moneyfest Aid*, private aid vouchers on RGB with an offline assistant (`backend/`, `web/`).
-3. **Saturday evening → Sunday:** *KeyProof*. A jury member liked the document-verification idea but said our first design (a separate "verifier agent" checking metadata) wasn't trustworthy enough. We removed our own verifier entirely: trust now comes only from issuers' signatures and the math.
-4. **Sunday morning:**
-   - the local AI moved onto the tenant's documents;
-   - tested with real documents;
-   - added the sex requirement in the circuit;
-   - built the standalone verifier and the Tether WDK wallet.
 
 ## Security note
 
