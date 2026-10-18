@@ -220,6 +220,16 @@ class Demo:
             self.log("tenant", f"{filename}: REJECTED, {failed['check']}: {failed['detail']}.")
         return entry
 
+    def remove_doc(self, slot, file):
+        """The tenant removes a document added by mistake (nothing was sent anywhere)."""
+        if slot and slot in self.tenant["docs"]:
+            f = self.tenant["docs"].pop(slot)["file"]
+            self.log("tenant", f"{f}: removed.")
+        if file:
+            self.tenant["real"] = [x for x in self.tenant.get("real", []) if x["file"] != file]
+            self.log("tenant", f"{file}: removed.")
+        return {"ok": True}
+
     def _read_doc(self, entry, text):
         """Local AI reads the document on this computer: what it is and its key values."""
         t0 = time.time()
@@ -533,6 +543,8 @@ class Handler(BaseHTTPRequestHandler):
                     out = DEMO.upload(name, open(os.path.join(ROOT, "demo_docs", name), "rb").read())
                 elif path == "/api/issuer/send":
                     out = DEMO.issuer_send([int(x) for x in body.get("types", [1, 2, 3, 4, 5])])
+                elif path == "/api/tenant/remove":
+                    out = DEMO.remove_doc(body.get("slot"), body.get("file"))
                 elif path == "/api/tenant/use_wallet":
                     out = DEMO.use_wallet()
                 elif path == "/api/tenant/send":

@@ -90,7 +90,8 @@
       l_dep_req: "Your assistant asked the tenant for the deposit of {amount}.", l_dep_ok: "Deposit of {amount} received ✓",
       new_request: "Change my request", tech: "Show technical details", helper: "Your assistant",
       reset: "Reset demo", dev: "Developer view", wallets: "Wallets",
-      identity: "Is an adult (18 or older)", sex_F: "a woman", sex_M: "a man", sex_any: "Anyone", sex_only_F: "Women only", sex_only_M: "Men only", sex_label: "Sex (from the signed codice fiscale)",
+      identity: "Is an adult (18 or older)", sex_F: "a woman", sex_M: "a man", sex_req_F: "Is a woman", sex_req_M: "Is a man", remove: "Remove", unrelated: "Not related to this request – it can't help your application. You can remove it.",
+      related_real: "Matches “{x}”, but it can't be used for the proof: only documents from trusted issuers count.", extra_warn: "Not needed for this flat – you can remove it:", sex_any: "Anyone", sex_only_F: "Women only", sex_only_M: "Men only", sex_label: "Sex (from the signed codice fiscale)",
       sex_note: "Only for rooms in a shared flat or your own home – elsewhere a sex requirement may be discrimination.",
       income: "Earns at least {x} per month",
       occ_student: "Is a student", occ_employed: "Has a job", occ_either: "Is a student or has a job", occ_until: "until {d}",
@@ -170,7 +171,8 @@
       l_dep_req: "Il tuo assistente ha chiesto il deposito di {amount}.", l_dep_ok: "Deposito di {amount} ricevuto ✓",
       new_request: "Modifica la richiesta", tech: "Mostra dettagli tecnici", helper: "Il tuo assistente",
       reset: "Ricomincia demo", dev: "Vista sviluppatore", wallets: "Portafogli",
-      identity: "È maggiorenne (18 anni o più)", sex_F: "donna", sex_M: "uomo", sex_any: "Chiunque", sex_only_F: "Solo donne", sex_only_M: "Solo uomini", sex_label: "Sesso (dal codice fiscale firmato)",
+      identity: "È maggiorenne (18 anni o più)", sex_F: "donna", sex_M: "uomo", sex_req_F: "È una donna", sex_req_M: "È un uomo", remove: "Rimuovi", unrelated: "Non è collegato a questa richiesta: non aiuta la tua candidatura. Puoi rimuoverlo.",
+      related_real: "Corrisponde a “{x}”, ma non può essere usato per la prova: valgono solo documenti di enti fidati.", extra_warn: "Non necessari per questo appartamento – puoi rimuoverli:", sex_any: "Chiunque", sex_only_F: "Solo donne", sex_only_M: "Solo uomini", sex_label: "Sesso (dal codice fiscale firmato)",
       sex_note: "Solo per stanze in appartamento condiviso o in casa tua: altrimenti può essere discriminazione.",
       income: "Guadagna almeno {x} al mese",
       occ_student: "È uno studente", occ_employed: "Ha un lavoro", occ_either: "È studente o ha un lavoro", occ_until: "fino al {d}",
@@ -250,7 +252,8 @@
       l_dep_req: "Asistanınız kiracıdan {amount} depozito istedi.", l_dep_ok: "{amount} depozito alındı ✓",
       new_request: "İsteğimi değiştir", tech: "Teknik ayrıntıları göster", helper: "Asistanınız",
       reset: "Demoyu sıfırla", dev: "Geliştirici görünümü", wallets: "Cüzdanlar",
-      identity: "Reşit (18 yaş veya üstü)", sex_F: "kadın", sex_M: "erkek", sex_any: "Herkes", sex_only_F: "Yalnızca kadınlar", sex_only_M: "Yalnızca erkekler", sex_label: "Cinsiyet (imzalı vergi kodundan)",
+      identity: "Reşit (18 yaş veya üstü)", sex_F: "kadın", sex_M: "erkek", sex_req_F: "Kadın", sex_req_M: "Erkek", remove: "Kaldır", unrelated: "Bu istekle ilgili değil – başvurunuza yardımcı olmaz. Kaldırabilirsiniz.",
+      related_real: "“{x}” ile eşleşiyor, ancak kanıt için kullanılamaz: yalnızca güvenilir kurumların belgeleri sayılır.", extra_warn: "Bu daire için gerekmiyor – kaldırabilirsiniz:", sex_any: "Herkes", sex_only_F: "Yalnızca kadınlar", sex_only_M: "Yalnızca erkekler", sex_label: "Cinsiyet (imzalı vergi kodundan)",
       sex_note: "Yalnızca paylaşımlı evde oda veya kendi eviniz için – aksi halde ayrımcılık olabilir.",
       income: "Ayda en az {x} kazanıyor",
       occ_student: "Öğrenci", occ_employed: "Bir işi var", occ_either: "Öğrenci veya bir işi var", occ_until: "{d} tarihine kadar",
@@ -305,7 +308,8 @@
   S.SAMPLE = { identity: "1_Identity_codice_fiscale_Elena_Rossi.pdf", income: "2_Income_statement_Elena_Rossi.pdf", occupation: "3_Enrolment_certificate_Elena_Rossi.pdf", savings: "4_Balance_certificate_Elena_Rossi.pdf", guarantor: "5_Guarantor_income_Marco_Rossi.pdf" };
   // A landlord rule in plain words
   S.ruleText = (slot, r) => {
-    if (slot === "identity") return S.t("identity") + (r.sex === "F" || r.sex === "M" ? " · " + S.t("sex_" + r.sex) : "");
+    if (slot === "identity") return S.t("identity");
+    if (slot === "sex") return S.t("sex_req_" + r.sex);
     if (slot === "income") return S.t("income", { x: amt(r.minIncome) });
     if (slot === "savings") return S.t("savings", { x: amt(r.minSavings) });
     if (slot === "guarantor") return S.t("guarantor", { x: amt(r.minGuarantor) });
@@ -313,6 +317,9 @@
     return r.leaseEnd ? base + " " + S.t("occ_until", { d: new Date(r.leaseEnd + "T00:00:00Z").toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) }) : base;
   };
   S.ticked = (r) => S.SLOTS.filter((s) => r.checks[s]);
+  // Requirement lines as the landlord sees them: age and sex are separate lines (both proven from the identity card)
+  S.reqs = (r) => S.ticked(r).flatMap((s) => (s === "identity" && (r.sex === "F" || r.sex === "M") ? ["identity", "sex"] : [s]))
+    .map((k) => ({ key: k, text: S.ruleText(k, r) }));
 
   // Assistant text from the local AI (with fixed fallback on the server). Cached per key.
   const cache = {};

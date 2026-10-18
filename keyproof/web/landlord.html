@@ -62,9 +62,10 @@ function screenForm() {
       <button class="btn block" id="fill">${KP.icon("sparkle")} ${t("fill")}</button>
       ${aiNote ? `<div class="helper"><div class="who">${KP.icon("sparkle", 14)} ${t("helper")}</div>${esc(aiNote)}</div>` : ""}</div>
     ${draft ? `<div class="card"><h2>${t("l_rules")}</h2>
-      ${tog("identity", `<label class="small dim">${t("sex_label")}
-          <select id="sex">${["", "F", "M"].map((v) => `<option value="${v}" ${(r.sex || "") === v ? "selected" : ""}>${t(v ? "sex_only_" + v : "sex_any")}</option>`).join("")}</select></label>
-          ${r.sex ? `<div class="small dim">${t("sex_note")}</div>` : ""}`)}
+      ${tog("identity")}
+      <div class="toggle sexRow"><div class="sexIcon">${KP.icon("user", 20)}</div><div><div class="title">${t("sex_label")}</div>
+        <div class="opts"><select id="sex">${["", "F", "M"].map((v) => `<option value="${v}" ${(r.sex || "") === v ? "selected" : ""}>${t(v ? "sex_only_" + v : "sex_any")}</option>`).join("")}</select></div>
+        ${r.sex ? `<div class="small dim" style="margin-top:6px">${t("sex_note")}</div>` : ""}</div></div>
       ${tog("income", num("minIncome", r.minIncome))}
       ${tog("occupation", `<label><input type="checkbox" id="allowStudent" ${r.allowStudent ? "checked" : ""}> ${t("occ_student")}</label>
                            <label><input type="checkbox" id="allowEmployed" ${r.allowEmployed ? "checked" : ""}> ${t("occ_employed")}</label>
@@ -100,7 +101,7 @@ function readDraft() {
 function screenStatus() {
   const req = S.request, r = req.rules, ap = S.tenant.approval;
   const reqHtml = `<div class="card"><h1>${t("l2_title")}</h1>${KP.listingHtml(req, t("l_flat"))}
-      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon">${KP.icon("dot")}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      ${KP.reqs(r).map((q) => `<div class="result-line"><span class="icon">${KP.icon("dot")}</span>${esc(q.text)}</div>`).join("")}
       ${ap ? "" : `<div class="notice wait"><span class="spinner"></span> ${t("l2_wait")}</div>
       <button class="btn secondary" id="edit">${t("new_request")}</button>`}</div>`;
   const link = (S.share_base || location.origin) + "/a/" + req.code;
@@ -119,7 +120,7 @@ function screenStatus() {
     res = `<div class="card"><div class="notice wait"><span class="spinner"></span> ${ap.status === "settled" ? t("l_checking") : t("l_arriving")}</div></div>`;
   } else {
     res = `<div class="card"><div class="notice ${verdict.ok ? "ok" : "bad"} big-result">${KP.icon(verdict.ok ? "shield" : "alert", 22)} ${verdict.ok ? t("l_ok") : t("l_bad")}</div>
-      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ${verdict.ok ? "ok" : "bad"}">${KP.icon(verdict.ok ? "check" : "x")}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      ${KP.reqs(r).map((q) => `<div class="result-line"><span class="icon ${verdict.ok ? "ok" : "bad"}">${KP.icon(verdict.ok ? "check" : "x")}</span>${esc(q.text)}</div>`).join("")}
       <p><b>${t("l_never")}</b></p><div id="summary"></div>
       <details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>
         ${verdict.steps.map((st) => `<li>${st[1] ? "✓" : "✗"} ${esc(st[0])}${st[2] ? " – " + esc(st[2]) : ""}</li>`).join("")}
@@ -137,7 +138,7 @@ function screenDoneL() {
   const d = S.landlord.deposit, r = S.request.rules;
   const pay = S.landlord.log.find((l) => l.link && l.text.startsWith("Deposit received"));
   return KP.doneHtml({ sub: t("done_l_sub"), amount: eur(d.amount), token: verdict && verdict.asset, txLink: pay && pay.link,
-    privateText: t("pk_l"), nextText: t("next_l"), items: KP.ticked(r).map((x) => KP.ruleText(x, r)), againLabel: t("new_req") });
+    privateText: t("pk_l"), nextText: t("next_l"), items: KP.reqs(r).map((x) => x.text), againLabel: t("new_req") });
 }
 
 // The landlord's own checks on what arrived in its RGB wallet (same as the developer view).
@@ -174,7 +175,7 @@ async function verify() {
 async function fillHelpers() {
   if ($("summary") && verdict && verdict.ok) {
     const r = S.request.rules;
-    const h = await KP.explain("summary", { items: KP.ticked(r).map((s) => KP.ruleText(s, r)), deposit: eur(S.request.deposit) }, "sum" + verdict.asset);
+    const h = await KP.explain("summary", { items: KP.reqs(r).map((x) => x.text), deposit: eur(S.request.deposit) }, "sum" + verdict.asset);
     if ($("summary")) $("summary").innerHTML = KP.helperHtml(h.text, h.source);
   }
 }

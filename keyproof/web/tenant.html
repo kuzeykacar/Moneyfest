@@ -65,7 +65,7 @@ function screenWaiting() {
 function screenRequest() {
   setProgress(1, 4);
   const r = S.request.rules;
-  const items = KP.ticked(r).map((s) => `<div class="item"><div class="icon">${KP.icon("check")}</div><div class="body"><div class="title">${esc(KP.ruleText(s, r))}</div></div></div>`).join("");
+  const items = KP.reqs(r).map((q) => `<div class="item"><div class="icon">${KP.icon("check")}</div><div class="body"><div class="title">${esc(q.text)}</div></div></div>`).join("");
   return `<div class="card">${KP.listingHtml(S.request)}<h1>${t("t1_title")}</h1>${items}
             <div id="help1"></div>
             <button class="btn block" id="next1">${t("t1_next")} →</button></div>`;
@@ -80,9 +80,7 @@ function screenDocs() {
         <div class="title">${t("d_" + s)}</div><div class="dim small">${t("s_" + s)}</div>
         <div class="${ok ? "okText" : "dim"}" style="margin-top:4px">${ok ? esc(t("original", { issuer: d.issuer })) : t("missing")}</div>
         ${ok ? KP.aiDocHtml(d) : ""}
-        ${ok ? "" : `<div class="actions row">
-            <label class="btn secondary">${t("choose")}<input type="file" accept="application/pdf" class="hidden" data-slot="${s}"></label>
-            ${KP.presenter() ? `<button class="btn link" data-sample="${s}">${t("use_sample")}</button>` : ""}</div>`}
+        ${ok ? `<button class="btn link small rm" data-rm-slot="${s}">${KP.icon("x", 14)} ${t("remove")}</button>` : KP.presenter() ? `<div class="actions row"><button class="btn link" data-sample="${s}">${t("use_sample")}</button></div>` : ""}
       </div></div>`;
   }).join("");
   const rej = rejected ? `<div class="notice bad"><b>${KP.icon("alert", 18)} ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
@@ -105,6 +103,12 @@ function aiSummary() {
   if (!bad && !allIn) return "";
   return `<div class="notice ${bad ? "wait" : "ok"} aiSum">${KP.icon(bad ? "alert" : "sparkle", 18)} ${t(bad ? "ai_issue" : "ai_ok")}<div class="small dim" style="margin-top:4px">${t("ai_note")}</div></div>`;
 }
+function relatedNote(d) {
+  const a = d.ai; if (!a || a.status !== "done") return "";
+  return needed().includes(a.type)
+    ? `<div class="small dim" style="margin-top:6px">${esc(t("related_real", { x: t("d_" + a.type) }))}</div>`
+    : `<div class="notice wait small" style="margin:8px 0 0">${KP.icon("alert", 16)} ${esc(t("unrelated"))}</div>`;
+}
 function realDocs() {
   const list = S.tenant.real || [];
   if (!list.length) return "";
@@ -112,12 +116,15 @@ function realDocs() {
     ${list.map((d) => `<div class="item"><div class="icon ${d.level === "signed" ? "warn" : ""}">${KP.icon(d.level === "signed" ? "alert" : "file")}</div><div class="body">
       <div class="title">${esc(d.file)}</div>
       <div class="small ${d.level === "signed" ? "warnText" : "dim"}">${esc(d.level === "signed" ? t("real_signed", { s: d.signer }) : t("real_unsigned"))}</div>
-      ${KP.aiDocHtml(d)}</div></div>`).join("")}</div>`;
+      ${relatedNote(d)}
+      ${KP.aiDocHtml(d)}
+      <button class="btn link small rm" data-rm-file="${esc(d.file)}">${KP.icon("x", 14)} ${t("remove")}</button></div></div>`).join("")}</div>`;
 }
 function extraDocs() {
   const extra = Object.entries(S.tenant.docs).filter(([s, d]) => d.ok && !needed().includes(s));
   if (!extra.length) return "";
-  return `<div class="small dim" style="margin-top:14px">${t("ai_extra")}: ${extra.map(([s, d]) => esc(d.file)).join(", ")}</div>`;
+  return `<div class="notice wait" style="margin-top:14px">${KP.icon("alert", 18)} ${t("extra_warn")}
+    ${extra.map(([s, d]) => `<div class="row" style="margin-top:6px"><span>${esc(d.file)}</span><button class="btn link small rm" data-rm-slot="${s}">${KP.icon("x", 14)} ${t("remove")}</button></div>`).join("")}</div>`;
 }
 
 function screenProof() {
@@ -126,11 +133,11 @@ function screenProof() {
   let inner;
   if (proving) inner = `<div class="notice wait"><span class="spinner"></span> ${t("proving")}</div><div class="bar"><div id="pbar"></div></div>`;
   else if (proof) inner = `<div class="notice ok"><b>${KP.icon("lock", 18)} ${t("proof_ready")}</b></div>
-      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ok">${KP.icon("check")}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      ${KP.reqs(r).map((q) => `<div class="result-line"><span class="icon ok">${KP.icon("check")}</span>${esc(q.text)}</div>`).join("")}
       <button class="btn ok block" id="send" style="margin-top:14px">${t("send")} →</button>`;
   else if (proofError) {
     const pre = Z.precheck(Z.publicRequest(r), cards()).filter((p) => !p.ok);
-    inner = `<div class="notice bad"><b>${t("proof_none")}</b>${pre.map((p) => `<br>✗ ${esc(KP.ruleText(p.slot, r))}`).join("")}</div>
+    inner = `<div class="notice bad"><b>${t("proof_none")}</b>${pre.map((p) => `<br>✗ ${esc(KP.ruleText(p.slot === "identity" && /sex/.test(p.why) ? "sex" : p.slot, r))}`).join("")}</div>
              <button class="btn secondary block" id="back2">← ${t("t2_title")}</button>`;
   } else inner = `<button class="btn block" id="prove">${t("make_proof")}</button>`;
   return `<div class="card"><h1>${t("t3_title")}</h1><p class="dim">${t("t3_text")}</p>${inner}</div>`;
@@ -141,7 +148,7 @@ function screenDone() {
   const dep = S.tenant.deposit, r = S.request.rules;
   const pay = S.tenant.log.find((l) => l.link && l.text.startsWith("Paid the deposit"));
   return KP.doneHtml({ sub: t("done_t_sub"), amount: eur(dep.amount), token: S.tenant.approval.asset_id, txLink: pay && pay.link,
-    privateText: t("pk_t"), nextText: t("next_t"), items: KP.ticked(r).map((x) => KP.ruleText(x, r)), againLabel: t("new_app") });
+    privateText: t("pk_t"), nextText: t("next_t"), items: KP.reqs(r).map((x) => x.text), againLabel: t("new_app") });
 }
 
 function screenAfter() {
@@ -227,7 +234,10 @@ function bind() {
       refresh(true);
     }));
   on("nopay", async () => { await api("/api/tenant/pay", { yes: false }); refresh(true); });
-  document.querySelectorAll("input[type=file][data-slot]").forEach((el) => (el.onchange = () => el.files[0] && upload(el.files[0])));
+  document.querySelectorAll("[data-rm-slot],[data-rm-file]").forEach((el) => (el.onclick = async () => {
+    await api("/api/tenant/remove", { slot: el.dataset.rmSlot || null, file: el.dataset.rmFile || null });
+    proof = null; proofError = null; refresh(true);
+  }));
   document.querySelectorAll("[data-sample]").forEach((el) => (el.onclick = async () => handleUpload(await api("/api/tenant/sample", { name: KP.SAMPLE[el.dataset.sample] }))));
 }
 
@@ -256,7 +266,7 @@ async function fillHelpers() {
   fillWallet();
   if ($("help1") && S.request) {
     const r = S.request.rules;
-    const h = await KP.explain("request", { items: KP.ticked(r).map((s) => KP.ruleText(s, r)) }, "req" + r.requestId);
+    const h = await KP.explain("request", { items: KP.reqs(r).map((x) => x.text) }, "req" + r.requestId);
     if ($("help1")) $("help1").innerHTML = KP.helperHtml(h.text, h.source);
   }
   if ($("helpDep") && S.tenant.pending_payment) {

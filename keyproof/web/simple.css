@@ -231,3 +231,5 @@ main, .card, .doneGrid > * { min-width: 0; }
 .aiSum { margin: 0 0 14px; }
 .realBox { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .warnText { color: var(--wait); } .item .icon.warn { background: var(--wait-bg); color: var(--wait); }
+.btn.small { font-size: .82rem; padding: 4px 0; } .rm { color: var(--faint); margin-top: 6px; } .rm:hover { color: var(--bad); }
+.sexRow .sexIcon { width: 48px; display: grid; place-items: center; color: var(--dim); }
