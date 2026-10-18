@@ -30,7 +30,7 @@ Built during the *Agentic Dollars on Bitcoin* hackathon (Turin, 17–18 Oct 2026
 | Issuer signature | the data is real | yes |
 | ZK proof (circom + Groth16) | the data passes the rules, privately | yes |
 | RGB on Bitcoin (on-chain) | who owns the approval, single use, timestamp; carries the deposit | yes |
-| Local AI (QVAC, Qwen3 1.7B) | turns the landlord's sentence into checkboxes | **never** |
+| Local AI (QVAC, Qwen3.5 4B) | turns the landlord's sentence into checkboxes | **never** |
 | Human | confirms sending the approval and paying | yes |
 
 ## The 5 checks a landlord can tick

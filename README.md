@@ -47,7 +47,7 @@ KeyProof lets the tenant **prove the answers** instead of sending the documents:
 | Issuer's digital signature | the data is real and unchanged | yes |
 | Zero-knowledge proof | the data passes the landlord's rules, without revealing it | yes |
 | RGB token on Bitcoin | who owns the approval; single use; timestamp; carries the deposit | yes |
-| Local AI (QVAC, Qwen3 1.7B) | understands the landlord's text, fills the form | **never** |
+| Local AI (QVAC, Qwen3.5 4B) | understands the landlord's text, fills the form | **never** |
 | Humans | landlord publishes the rules; tenant confirms sending and paying | yes |
 
 Rule we kept from the start: **the AI understands, code and math decide, humans confirm.**
@@ -78,8 +78,11 @@ specially protected (GDPR Art. 10) and landlords generally may not ask for it.
   Mutinynet indexer (`esplora.signet.kaleidoswap.com`) and RGB proxy (`proxy.kaleidoswap.com`). No Docker.
 
 ### QVAC (required)
-- **Qwen3 1.7B (Q4)** served locally by `@qvac/cli` (OpenAI-compatible API on `127.0.0.1:11434`), offline.
-- Turns the landlord's free text into the 5 checkboxes and numbers (answers in about 1 second).
+- **Qwen3.5 4B (Q4_K_M)** served locally by `@qvac/cli` (OpenAI-compatible API on `127.0.0.1:11436`), offline;
+  Qwen3 1.7B as a backup. Thinking mode off (`reasoning_budget: 0`) so it answers directly.
+- Turns the landlord's free text (English, Italian, Turkish) into the 5 checkboxes and numbers.
+- Benchmark on 10 landlord sentences (`keyproof/tools/bench_ai.py`): **Qwen3.5 4B 10/10 correct, ~3.3 s**;
+  Qwen3 1.7B 8/10, ~1.2 s.
 - Code validates the output (booleans, whole euros, real dates) and the landlord confirms the boxes.
   If QVAC is off, keyword rules take over so the demo never breaks.
 
@@ -140,7 +143,7 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | Signed demo documents (5 + 1 fake) | ✅ |
 | Signature checks | ✅ |
 | ZK circuit, trusted setup, browser proving and verifying | ✅ |
-| Local AI (QVAC) filling the landlord form | ✅ (keyword backup) |
+| Local AI (QVAC, Qwen3.5 4B) filling the landlord form | ✅ 10/10 on our benchmark (keyword backup) |
 | Web app: landlord panel + tenant panel | ✅ |
 | Wallet page: balances, assets, transactions, every spend needs Confirm | ✅ |
 | Real RGB approval token + deposit on Mutinynet | ✅ |

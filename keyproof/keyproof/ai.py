@@ -13,8 +13,11 @@ import os
 import re
 import urllib.request
 
-QVAC_URL = os.environ.get("QVAC_URL", "http://127.0.0.1:11434/v1/chat/completions")
-QVAC_MODEL = os.environ.get("QVAC_MODEL", "moneyfest")
+# Qwen3.5 4B Multimodal (scripts/start_ai_4b.command) first, the older Qwen3 1.7B as backup.
+ENDPOINTS = [(os.environ.get("QVAC_URL", "http://127.0.0.1:11436/v1/chat/completions"),
+              os.environ.get("QVAC_MODEL", "keyproof"), "Qwen3.5 4B"),
+             ("http://127.0.0.1:11434/v1/chat/completions", "moneyfest", "Qwen3 1.7B")]
+LAST_MODEL = {"name": None}
 USE_FAKE = os.environ.get("KEYPROOF_AI", "fake") == "fake"
 
 CHECKS = ["identity", "income", "occupation", "savings", "guarantor"]
@@ -36,15 +39,30 @@ Rules:
 - Use false and 0 for anything not mentioned. Never invent numbers."""
 
 
+def chat(system, user, max_tokens=400):
+    """Ask the local model; tries the 4B model first, then the 1.7B one."""
+    last = None
+    for url, model, name in ENDPOINTS:
+        body = {"model": model, "temperature": 0, "max_tokens": max_tokens,
+                "reasoning_budget": 0,          # answer directly, no long "thinking" first (Qwen3.5)
+                "messages": [{"role": "system", "content": system},
+                             {"role": "user", "content": user + " /no_think"}]}
+        req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                out = json.load(resp)["choices"][0]["message"].get("content") or ""
+            if not out.strip():
+                raise ValueError("empty answer")
+            LAST_MODEL["name"] = name
+            return re.sub(r"<think>.*?</think>", "", out, flags=re.DOTALL).strip()
+        except Exception as e:
+            last = e
+    raise ConnectionError(f"no local model answered: {last}")
+
+
 def _ask_model(text):
-    body = {"model": QVAC_MODEL, "temperature": 0,
-            "messages": [{"role": "system", "content": PROMPT},
-                         {"role": "user", "content": text + " /no_think"}]}
-    req = urllib.request.Request(QVAC_URL, data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        out = json.load(resp)["choices"][0]["message"]["content"]
-    out = re.sub(r"<think>.*?</think>", "", out, flags=re.DOTALL)
+    out = chat(PROMPT, text)
     m = re.search(r"\{.*\}", out, re.DOTALL)
     if not m:
         raise ValueError(f"model did not return JSON: {out!r}")
@@ -80,7 +98,7 @@ def landlord_rules(text):
     """Landlord's sentence -> {"rules": ..., "source": "qvac" | "keywords"}."""
     if not USE_FAKE:
         try:
-            return {"rules": _clean(_ask_model(text)), "source": "qvac"}
+            return {"rules": _clean(_ask_model(text)), "source": "qvac", "model": LAST_MODEL["name"]}
         except Exception as e:  # model down or bad JSON: keyword rules keep the demo going
             print(f"QVAC failed, using keyword rules: {e}", flush=True)
     return {"rules": _clean(_keywords(text)), "source": "keywords"}
