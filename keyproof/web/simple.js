@@ -42,7 +42,7 @@
       how3: "Settled on Bitcoin", how3t: "The approval and the deposit move as RGB assets on Bitcoin.",
       admin: "Admin",
       zk_title: "The proof", zk_text: "Anyone can check this proof independently – a bank, a notary or a lawyer – without trusting KeyProof. It contains no personal data.",
-      zk_dl: "Download proof", zk_check: "Check again now", zk_ok: "Proof valid", zk_bad: "Proof NOT valid", zk_how: "Independent check (developers):",
+      zk_verifier: "Open the verifier", zk_dl: "Download proof", zk_check: "Check again now", zk_ok: "Proof valid", zk_bad: "Proof NOT valid", zk_how: "Independent check (developers):",
       completed: "Completed",
       done_title: "All done", done_t_sub: "Your deposit has arrived. Thank you for using KeyProof.", done_l_sub: "The deposit has arrived. Thank you for using KeyProof.",
       receipt: "Receipt", r_amount: "Deposit", r_date: "Date", r_proof: "Approval token", r_tx: "Payment",
@@ -387,7 +387,7 @@
     </div>
     <div class="card"><h2 class="withicon">${S.icon("shield")} ${S.esc(S.t("zk_title"))}</h2><p class="dim">${S.esc(S.t("zk_text"))}</p>
       <div class="row"><button class="btn" id="zkDl">${S.icon("file", 18)} ${S.esc(S.t("zk_dl"))}</button>
-        <button class="btn secondary" id="zkCheck">${S.icon("shield", 18)} ${S.esc(S.t("zk_check"))}</button><span id="zkRes"></span></div>
+        <button class="btn secondary" id="zkCheck">${S.icon("shield", 18)} ${S.esc(S.t("zk_check"))}</button><a class="btn secondary" href="/verify.html" target="_blank" rel="noopener">${S.icon("link", 18)} ${S.esc(S.t("zk_verifier"))}</a><span id="zkRes"></span></div>
       <p class="small dim" style="margin-top:14px">${S.esc(S.t("zk_how"))}</p>
       <div class="content mono small zkcmd">snarkjs groth16 verify verification_key.json public.json proof.json</div></div>`;
   // Buttons of the proof section (call after rendering the completion screen)

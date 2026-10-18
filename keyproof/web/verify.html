@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof Verifier</title>
+<style>
+:root { --bg:#0a0e17; --card:#131a29; --raise:#1a2336; --ink:#eef2f8; --dim:#9aa7bd; --faint:#64718a; --line:rgba(255,255,255,.08);
+  --brand:#3b82f6; --brand2:#60a5fa; --ok:#34d399; --okbg:rgba(52,211,153,.12); --bad:#ff8f80; --badbg:rgba(255,143,128,.12); --wait:#f2c46d; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg:#f4f6fa; --card:#fff; --raise:#f0f3f8; --ink:#111827; --dim:#4b5563; --faint:#8a94a6; --line:rgba(0,0,0,.08);
+  --ok:#0f8a5f; --okbg:#e7f8ef; --bad:#c2410c; --badbg:#fdecea; } }
+:root[data-theme="dark"] { --bg:#0a0e17; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 28px 16px 60px; }
+h1 { font-size: 1.7rem; margin: 0 0 6px; letter-spacing: -.01em; } .dim { color: var(--dim); } .small { font-size: .88rem; }
+.brand { display:flex; gap:10px; align-items:center; font-weight:700; margin-bottom: 26px; }
+.logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,var(--brand2),var(--brand)); display:grid; place-items:center; color:#fff; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px; margin-top:16px; }
+.drop { border:1.5px dashed var(--faint); border-radius:16px; padding:34px 16px; text-align:center; cursor:pointer; display:block; }
+.drop.over { border-color: var(--brand2); background: rgba(59,130,246,.07); }
+.btn { display:inline-block; margin-top:12px; padding:10px 18px; border-radius:12px; background:var(--raise); border:1px solid var(--line); color:var(--ink); font-weight:600; }
+.row { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line); }
+.row:first-child { border-top:0; }
+.ic { flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:.85rem; }
+.ok .ic { background:var(--okbg); color:var(--ok); } .bad .ic { background:var(--badbg); color:var(--bad); }
+.verdict { font-size:1.25rem; font-weight:700; padding:14px 16px; border-radius:14px; margin-bottom:8px; }
+.verdict.ok { background:var(--okbg); color:var(--ok); } .verdict.bad { background:var(--badbg); color:var(--bad); }
+.req { padding:8px 0; border-top:1px solid var(--line); } .req:first-child { border-top:0; }
+.mono { font-family: ui-monospace, Menlo, monospace; font-size:.82rem; word-break: break-all; }
+a { color: var(--brand2); } input[type=file] { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="logo">K</span> KeyProof Verifier</div>
+  <h1>Check a KeyProof proof</h1>
+  <p class="dim">Drop the <b>keyproof-proof-….json</b> file a tenant or landlord gave you. Everything is checked in this browser, against KeyProof's
+    official verification key and trusted-issuer list built into this page – nothing is uploaded, and the file cannot vouch for itself.</p>
+  <label class="drop" id="drop"><div><b>Drop the proof file here</b></div><div class="dim small">or</div><span class="btn">Choose file</span>
+    <input type="file" id="file" accept=".json,application/json"></label>
+  <div id="out"></div>
+  <p class="dim small" style="margin-top:28px">Independent check with the open-source tool: save <code>proof</code>, <code>publicSignals</code> and the verification key
+    from the file, then run <code>snarkjs groth16 verify verification_key.json public.json proof.json</code>.</p>
+</div>
+<script src="zk/snarkjs.min.js"></script>
+<script>
+const VK = {"protocol":"groth16","curve":"bn128","nPublic":27,"vk_alpha_1":["15841439634320798897631622824360152575445006790253659343923487774137512287546","7543868026461090531191557613709184883707634274392745188716968595811182171883","1"],"vk_beta_2":[["18258780769436101554247525635131665790176967451904420397146661293795981241570","15621269025589391557113334946598710909540854472298146935070132662927595925828"],["19514094100037670423339366685486414074768930964983470049706310314339337486743","8526100561516068027821752435996082251306553758862912236911994289897210015443"],["1","0"]],"vk_gamma_2":[["10857046999023057135944570762232829481370756359578518086990519993285655852781","11559732032986387107991004021392285783925812861821192530917403151452391805634"],["8495653923123431417604973247489272438418190587263600148770280649306958101930","4082367875863433681332203403145435568316851327593401208105741076214120093531"],["1","0"]],"vk_delta_2":[["4652530574057958396054060753063629042255842222174224927395861555882356965206","16830031161982394019819151149383978079555347406421670292408756154469360156945"],["7532708278782731342800707070340884602241212318528391992436988783656050416078","3154855493708130366813892616676894344274553816373403058590318014206331568055"],["1","0"]],"vk_alphabeta_12":[[["21352272854890663789545291939984711731017352291970027987982450932306743839508","18646944244166331552129631078116836115576052332398663955922453987734572376414"],["2184673356202694782057745798777826150347126401765046069633891799251337573892","3380185451839809885970126378477428062266548971854306753342740099945580809278"],["13681013967998361294609958685400508401550682467693867221872263707188212206453","6680839459692503741948862067244347251441255125448107712405627918753201990814"]],[["18355000010035556381689790023272884811233437343154060609960553945997531198158","11247614330832050309002529973939736420299154592313721194751659316871331221322"],["15903287841715265772376474099984411408786701391694565465903054064265835462751","20220285614110502340048076938350649404818147726032430773407491218425740350706"],["13442487904102351250166850532762818233094326883044539566866401437822812383268","20542499125579612892723844064229147723132955619000891044838965804484714341679"]]],"IC":[["1321050288329931308336422554767425355845491709013062439640122604721234952256","17235583445388239075270766879579651952779757937896091545338538594589869484956","1"],["18218092777150251863262486563994746515738979474090914540545092663446587336131","4215285961721626797275807221774729539773039997424037225853184137491994814922","1"],["7132039181991280659584766227786184888962918920242140116839717957370892539997","72445742705687772356159601633079278278249810477935511542635678782195864815","1"],["14818575203428659389648966328338194515368624303213243960218682928725879911190","20809300060141655547873543181839320376485080566335478015274516442998972431353","1"],["7883123097675977705392563896375819046528460932580008950326676223822433946067","963897735680912780198806361157223511147367578993802045355602756181604085329","1"],["529981209991781428281381689220383006942807102411079364576177856951527599857","4037704193641977803892431367992707362631624024650538305034891779818443349500","1"],["18741166707453010626089348082511937389406988666203213525402513899588105257063","13558577099570438923939957219144727404890986075023255715458037595681028637060","1"],["16588453997686993378793650743992450249140096890581819154428845906349722028324","16787363462094745324925632419387733347728221541545116741936725811958184975471","1"],["6250650854843792471411445589682161940477254770422233127958187288461196534707","7328334331727515650792025357303922328550962165381590653930363859268185898759","1"],["21133245013640178915254547120752894419914994309187180591413637385212473488519","5327538052176275982707437500417212362865205863300868878376825157286938458192","1"],["16141927256011444561983051984256848947341052406803373670713214966654085515999","15878273177043547812187070167941877430964467122816835523659071838974251606291","1"],["8738259819084940494488008252388624752287954166242185892326734659777255138793","14130202194961000492765110029660295866103113400236194443611850169935439860114","1"],["19480823795381399195539010532954748321083643974637969538550422028120368199673","13949496085989163996987749926065943832948490283206244853623140032025630628247","1"],["5608496654159527966813818700140220753392900702659855670355140540541771773686","20860580903684637732663477379558828959932957397171556408195448403271899539475","1"],["14877630167115069103323058720485760660019993168719152832171921290944337738621","15481061076899174691680757328425335487078509249547359969066827675751179489161","1"],["18393183695382692740995344613544951383470426146597277440323426529379105360607","13270413218429438995931299529932563729722810295151767195683359838104708989683","1"],["3120935094606330932542834843445871888293026589774160159479357920546655231085","16695693610962774708640148119799348915891103992266711572488215079406345077439","1"],["20725634981442028139031329344357918385609304320997809934148670632579738633060","5174320184185825766388868825650055400956484185760633267793412379696630752062","1"],["10222036970833037385962970887789475078498815951130182893472895327530944786117","21719927293304810260677398161931334195202334121525338278645891513563644381454","1"],["7064770863698108186943254916248041722823833129594350272400686733627530060092","887613499214044823281069518529901629161200357564130051343996339808961839492","1"],["6880483794507383449021757214199433921440306704868819644119860938396028290855","20980226052378495923951647942228629828664125775516193049408599641666466653379","1"],["1780361888333503694530549235870760450236040240789885516286245798229498022505","8124920657870779410443174829022731455307905430925863018656019514798238099319","1"],["1152150792460644070781208795170830640951759690141516422928137722594585778858","2514503200194332220872589642000081079748724979813728430168112005595838787015","1"],["6917822312232216850438415028394018932667498252931216575949423267775713342145","12762148664896169502071324405029677794877842976914044080030381759675263696449","1"],["11146970917260871428462795061580343256213337447195270109912556366433439742129","19652811480983943741839779531988303079253019141532543351517096162842299906922","1"],["3101209679228987166548366020002464925434045386233418128177164551127939858247","9016836104453247650309651640323424657653955050596706064112765103066821384806","1"],["20907096905300726232541780030499594488538931684470068598123299945392450327529","6366985428896207663887466112418064642390478244969752939167814624884244723148","1"],["4502284577093555108205493528420029448674438897329289284929063405153919259156","17420844123127367858554966114050698549772155529187045855948591552932066953488","1"]]};
+const TRUSTED = [
+ {
+  "name": "Moneyfest Bank (test)",
+  "role": "bank",
+  "docTypes": [
+   2,
+   4,
+   5
+  ],
+  "zk": [
+   "8650213191238131490612461268518161913481251366791240867322218846137941574559",
+   "15715095007107656303078340490597184065136032503345829765812290477111371749258"
+  ]
+ },
+ {
+  "name": "Moneyfest Anagrafe (test)",
+  "role": "identity office",
+  "docTypes": [
+   1
+  ],
+  "zk": [
+   "18605619925964558367815210257823177181105330509607084559635653006823987196729",
+   "9515331061644012101402275189408438538352320168436346658736917803747804848026"
+  ]
+ },
+ {
+  "name": "Moneyfest Employer (test)",
+  "role": "employer",
+  "docTypes": [
+   3
+  ],
+  "zk": [
+   "11432339308101284404511284605639715990535440091449609406281261510991366049001",
+   "2143255139128067211817757530166802030981692448020575502380492323034266959440"
+  ]
+ },
+ {
+  "name": "Moneyfest University (test)",
+  "role": "university",
+  "docTypes": [
+   3
+  ],
+  "zk": [
+   "7646142467841837456632536910687938115065051313521827920228007949929692811753",
+   "8063820941995671781172414089547959694892667811997053712066784631901116816569"
+  ]
+ }
+];
+const SLOTS = ["identity", "income", "occupation", "savings", "guarantor"];
+const TYPE = { identity: 1, income: 2, occupation: 3, savings: 4, guarantor: 5 };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const eur = (n) => "€" + Number(n || 0).toLocaleString("en-US");
+const day = (iso) => Math.round((Date.parse(iso + "T00:00:00Z") - Date.UTC(1970, 0, 1)) / 86400000);
+const nice = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+function publicRequest(r) {
+  const t = new Date(r.today + "T00:00:00Z");
+  const cutoff = Date.UTC(t.getUTCFullYear() - 18, t.getUTCMonth(), t.getUTCDate());
+  return { enabled: SLOTS.map((s) => (r.checks[s] ? 1 : 0)), adultCutoff: Math.round((cutoff - Date.UTC(1970, 0, 1)) / 86400000),
+    minIncome: r.minIncome || 0, allowStudent: r.allowStudent ? 1 : 0, allowEmployed: r.allowEmployed ? 1 : 0,
+    leaseEnd: r.leaseEnd ? day(r.leaseEnd) : 0, minSavings: r.minSavings || 0, minGuarantor: r.minGuarantor || 0,
+    today: day(r.today), maxAgeDays: r.maxAgeDays || 90, requestId: String(r.requestId), requiredSex: r.sex === "M" ? 1 : r.sex === "F" ? 2 : 0 };
+}
+function lines(r) {
+  const out = [];
+  if (r.checks.identity) { out.push("Is an adult (18 or older)"); if (r.sex === "F") out.push("Is a woman"); if (r.sex === "M") out.push("Is a man"); }
+  if (r.checks.income) out.push(`Earns at least ${eur(r.minIncome)} per month`);
+  if (r.checks.occupation) { const b = r.allowStudent && r.allowEmployed ? "Is a student or has a job" : r.allowStudent ? "Is a student" : "Has a job";
+    out.push(r.leaseEnd ? `${b} until ${nice(r.leaseEnd)}` : b); }
+  if (r.checks.savings) out.push(`Has at least ${eur(r.minSavings)} in savings`);
+  if (r.checks.guarantor) out.push(`Has a guarantor who earns at least ${eur(r.minGuarantor)} per month`);
+  return out;
+}
+async function check(file) {
+  const out = document.getElementById("out");
+  out.innerHTML = `<div class="card dim">Checking…</div>`;
+  const steps = [];
+  let b;
+  try { b = JSON.parse(await file.text()); } catch (e) { out.innerHTML = `<div class="card"><div class="verdict bad">✗ Not a readable proof file</div></div>`; return; }
+  const ps = b.publicSignals, r = b.rules;
+  steps.push(["The file contains a KeyProof proof and the landlord's rules", !!(Array.isArray(ps) && b.proof && r && r.checks)]);
+  let valid = false;
+  try { valid = await snarkjs.groth16.verify(VK, ps, b.proof); } catch (e) { valid = false; }
+  steps.push(["The zero-knowledge proof is mathematically valid (checked with KeyProof's official key, not the one in the file)", valid]);
+  let sameRules = false;
+  if (r && Array.isArray(ps)) {
+    const req = publicRequest(r), N = 5, off = 1 + 3 * N;
+    const names = ["adultCutoff", "minIncome", "allowStudent", "allowEmployed", "leaseEnd", "minSavings", "minGuarantor", "today", "maxAgeDays", "requestId", "requiredSex"];
+    sameRules = req.enabled.every((e, i) => String(e) === ps[1 + i]) && names.every((k, i) => String(req[k]) === ps[off + i]);
+  }
+  steps.push(["The proof is for exactly the rules written in the file (nothing easier)", sameRules]);
+  let trusted = !!r, used = [];
+  if (r && Array.isArray(ps)) SLOTS.forEach((s, i) => {
+    if (!r.checks[s]) return;
+    const iss = TRUSTED.find((x) => x.zk[0] === ps[1 + 5 + i] && x.zk[1] === ps[1 + 10 + i] && x.docTypes.includes(TYPE[s]));
+    if (!iss) trusted = false; else used.push(iss.name);
+  });
+  steps.push(["Every document was signed by a trusted issuer allowed for that kind of fact", trusted, [...new Set(used)].join(", ")]);
+  const ok = steps.every((s) => s[1]);
+  out.innerHTML = `<div class="card"><div class="verdict ${ok ? "ok" : "bad"}">${ok ? "✓ Valid KeyProof proof" : "✗ This proof is NOT valid"}</div>
+      ${steps.map((s) => `<div class="row ${s[1] ? "ok" : "bad"}"><span class="ic">${s[1] ? "✓" : "✗"}</span><div>${esc(s[0])}${s[2] ? `<div class="dim small">${esc(s[2])}</div>` : ""}</div></div>`).join("")}</div>
+    ${r && r.checks ? `<div class="card"><b>${ok ? "Proven about the tenant" : "Claimed in the file (not proven)"}</b>
+      ${lines(r).map((x) => `<div class="req">${ok ? "✓" : "•"} ${esc(x)}</div>`).join("")}
+      <p class="dim small" style="margin-top:12px">Nothing else is revealed: no name, no amounts, no documents.</p></div>
+    <div class="card small"><div class="dim">Application</div><div class="mono">${esc(b.code || "—")} · request ${esc(String(r.requestId))} · rules dated ${esc(r.today)}</div>
+      ${b.approval_tx ? `<div class="dim" style="margin-top:8px">Approval on Bitcoin</div><div class="mono">${String(b.approval_tx).startsWith("http") ? `<a href="${esc(b.approval_tx)}" target="_blank" rel="noopener">${esc(b.approval_tx)}</a>` : esc(b.approval_tx)}</div>` : ""}
+      ${b.deposit && b.deposit.tx ? `<div class="dim" style="margin-top:8px">Deposit</div><div class="mono">${String(b.deposit.tx).startsWith("http") ? `<a href="${esc(b.deposit.tx)}" target="_blank" rel="noopener">${esc(b.deposit.tx)}</a>` : esc(b.deposit.tx)}</div>` : ""}</div>` : ""}`;
+}
+const drop = document.getElementById("drop"), fileIn = document.getElementById("file");
+fileIn.onchange = () => fileIn.files[0] && check(fileIn.files[0]);
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); e.dataTransfer.files[0] && check(e.dataTransfer.files[0]); };
+</script>
+</body>
+</html>
