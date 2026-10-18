@@ -22,7 +22,7 @@
 
   const T = {
     en: {
-      wallet_title: "📥 In your wallet", wallet_text: "Official credentials your bank, comune and university sent straight to your wallet. No PDF needed.",
+      wallet_title: "📥 In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
       wallet_use: "Use these credentials", wallet_none: "Nothing in your wallet yet.", wallet_arriving: "Credentials are on their way to your wallet (about 1–2 minutes)…",
       or_pdf: "Or add signed PDF documents:", issuer: "Issuer",
       i_title: "Send official credentials", i_text: "Banca Demo, Demo Comune di Torino and Demo Politecnico send Elena's signed credentials straight to her wallet, on Bitcoin. In the future, this replaces PDF documents.",

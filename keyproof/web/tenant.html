@@ -92,10 +92,10 @@ function screenDocs() {
   }).join("");
   const rej = rejected ? `<div class="notice bad"><b>⛔ ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
                           <div id="helpRej">${KP.helperHtml(rejected.help, rejected.source)}</div>` : "";
-  return `<div class="card" id="walletCard"><h2>${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>
-          <div class="card"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}${rows}
+  return `<div class="card"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}${rows}
             <div class="row" style="margin-top:12px"><button class="btn link" id="fake">${t("try_fake")}</button></div>
-            <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>`;
+            <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
+          <div class="card" id="walletCard"><h2>${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
 }
 
 function screenProof() {
@@ -202,7 +202,7 @@ async function fillWallet() {
       <div class="title">${esc(c.label)}</div><div class="dim small">${esc(c.issuer || "")}</div>
       <div class="small ${c.ok ? "" : "dim"}">${c.ok ? "✓ " + esc(t("original", { issuer: c.issuer })) : esc((c.checks.find((x) => !x.ok) || {}).detail || "")}</div></div></div>`).join("")
     + (need.every((s) => S.tenant.docs[s] && S.tenant.docs[s].ok) ? "" : `<button class="btn ok block" id="useWallet" style="margin-top:10px">${t("wallet_use")}</button>`)
-    + `<p class="dim small" style="margin-top:12px">${t("or_pdf")}</p>`;
+    ;
   const u = $("useWallet"); if (u) u.onclick = async () => { await api("/api/tenant/use_wallet", {}); refresh(true); };
 }
 
