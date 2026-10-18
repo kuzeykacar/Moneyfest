@@ -183,6 +183,12 @@ and Groth16 proofs; the RGB token and stablecoin transfers on Bitcoin Mutinynet;
 
 ## Run it
 
+**Teammates, quickest way (about 5 min, no Bitcoin, no AI needed):**
+1. `git clone https://github.com/kuzeykacar/Moneyfest.git` (or *Code → Download ZIP* on GitHub)
+2. In Finder, double-click `keyproof/scripts/setup_mac.command` (once), then `keyproof/scripts/run_demo.command`
+3. Open http://127.0.0.1:8010 – drag the PDFs from `keyproof/demo_docs/` and `keyproof/real_docs/` onto the tenant screen.
+Without the local AI running, documents are read with simple rules instead (the screen says so).
+
 Requirements: a Mac (Apple Silicon), Python 3.10+. Everything installs into the project folder, no admin rights,
 no Docker.
 
