@@ -147,7 +147,7 @@ function screenDone() {
   KP.steps([t("st_req"), t("st_docs"), t("st_proof"), t("st_dep")], 5);
   const dep = S.tenant.deposit, r = S.request.rules;
   const pay = S.tenant.log.find((l) => l.link && l.text.startsWith("Paid the deposit"));
-  return KP.doneHtml({ sub: t("done_t_sub"), amount: eur(dep.amount), token: S.tenant.approval.asset_id, txLink: pay && pay.link,
+  return KP.doneHtml({ sub: t("done_t_sub"), amount: KP.eurSats(dep.amount), token: S.tenant.approval.asset_id, txLink: pay && pay.link,
     privateText: t("pk_t"), nextText: t("next_t"), items: KP.reqs(r).map((x) => x.text), againLabel: t("new_app") });
 }
 
@@ -162,7 +162,7 @@ function screenAfter() {
   html += line(ap.status === "settled" ? "ok" : "wait", ap.status === "settled" ? esc(t("sent_ok")) : `<span class="spinner"></span>&nbsp;${esc(t("sent_wait"))}`);
   if (ap.status === "settled") html += line(res ? (res.ok ? "ok" : "bad") : "wait", res ? esc(res.ok ? t("approved") : t("l_bad")) : `<span class="spinner"></span>&nbsp;${esc(t("waiting_landlord"))}`);
   if (pp) {
-    html += `<div id="helpDep"></div>${payError ? `<div class="notice bad">${KP.icon("alert", 18)} ${esc(payError)}</div>` : ""}<p class="big-result">${t("dep_q", { amount: eur(pp.amount) })}</p>
+    html += `<div id="helpDep"></div>${payError ? `<div class="notice bad">${KP.icon("alert", 18)} ${esc(payError)}</div>` : ""}<p class="big-result">${t("dep_q", { amount: KP.eurSats(pp.amount) })}</p>
       <div class="row"><button class="btn ok" id="pay">${t("pay", { amount: eur(pp.amount) })}</button>
       <button class="btn secondary" id="nopay">${t("not_now")}</button></div>`;
   } else if (dep) {

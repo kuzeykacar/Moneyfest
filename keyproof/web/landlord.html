@@ -137,7 +137,7 @@ function screenDoneL() {
   KP.steps([t("sl_desc"), t("sl_pub"), t("sl_res")], 4);
   const d = S.landlord.deposit, r = S.request.rules;
   const pay = S.landlord.log.find((l) => l.link && l.text.startsWith("Deposit received"));
-  return KP.doneHtml({ sub: t("done_l_sub"), amount: eur(d.amount), token: verdict && verdict.asset, txLink: pay && pay.link,
+  return KP.doneHtml({ sub: t("done_l_sub"), amount: KP.eurSats(d.amount), token: verdict && verdict.asset, txLink: pay && pay.link,
     privateText: t("pk_l"), nextText: t("next_l"), items: KP.reqs(r).map((x) => x.text), againLabel: t("new_req") });
 }
 

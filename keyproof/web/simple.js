@@ -9,6 +9,10 @@
   };
   S.esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   S.eur = (n) => "€" + Number(n || 0).toLocaleString("en-US");
+  // Deposit also shown in sats, at a fixed approximate demo rate (not a live price)
+  S.EUR_PER_BTC = 95000;
+  S.sats = (n) => Math.round(Number(n || 0) / S.EUR_PER_BTC * 1e8).toLocaleString("en-US") + " sats";
+  S.eurSats = (n) => S.eur(n) + " (≈ " + S.sats(n) + ")";
   const amt = (n) => (Number(n) > 0 ? S.eur(n) : "€ …");
   S.$ = (id) => document.getElementById(id);
 
@@ -454,7 +458,7 @@
       <div class="lTitle">${S.esc(L.address || "—")}</div>
       <div class="lMeta">${[L.kind !== undefined && L.kind !== "" ? S.esc(S.kindName(L.kind)) : "", date ? S.esc(S.t("f_movein")) + " " + S.esc(date) : "", L.landlord ? S.esc(S.t("f_landlord")) + ": " + S.esc(L.landlord) : ""].filter(Boolean).join(" · ")}</div></div>
       <div class="lPrice"><div class="lRent">${S.eur(req.rent)}<span class="dim small">${S.esc(S.t("per_month"))}</span></div>
-      <div class="small dim">${S.esc(S.t("f_deposit"))} ${S.eur(req.deposit)}</div></div></div>`;
+      <div class="small dim">${S.esc(S.t("f_deposit"))} ${S.eur(req.deposit)}</div><div class="small dim">≈ ${S.sats(req.deposit)}</div></div></div>`;
   };
   window.KP = S;
 })();

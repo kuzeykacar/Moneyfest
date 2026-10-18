@@ -57,7 +57,7 @@ const { esc, t } = KP;
         ${L.move_in ? row(t("f_movein"), esc(new Date(L.move_in + "T00:00:00Z").toLocaleDateString(KP.lang(), { dateStyle: "long", timeZone: "UTC" }))) : ""}
         ${row(t("f_rent"), esc(KP.eur(req.rent)) + esc(t("per_month")))}
         ${row(t("r_checks"), `<div class="checks">${KP.reqs(r).map((q) => `<div>${esc(q.text)}</div>`).join("")}</div>`)}
-        ${row(t("r_amount"), dep.amount ? esc(KP.eur(dep.amount)) + " (TUSDT, RGB)" : "—")}
+        ${row(t("r_amount"), dep.amount ? esc(KP.eurSats(dep.amount)) + " (TUSDT, RGB)" : "—")}
         ${row(t("r_tx"), link(b.deposit && b.deposit.tx))}
         ${row(t("r_appr_tx"), link(b.approval_tx))}
         ${row(t("r_proof"), `<span class="mono">${esc(b.approval_token || (S.tenant.approval || {}).asset_id || "—")}</span>`)}
