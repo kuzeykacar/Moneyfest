@@ -94,7 +94,7 @@ def _e(t):
     return t.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def layout(issuer, office, title, ref, rows, note, signer, when, accent=(0.11, 0.27, 0.55)):
+def layout(issuer, office, title, ref, rows, note, signer, when, accent=(0.11, 0.27, 0.55), footer=None, algo="ECDSA P-256, SHA-256"):
     """Official-looking one-page certificate: letterhead, title, reference, field table, signature panel."""
     r, g, b = accent
     o = []
@@ -123,13 +123,13 @@ def layout(issuer, office, title, ref, rows, note, signer, when, accent=(0.11, 0
     txt("F2", 10, 314, 192, "Digitally signed PDF (CMS signature)", (r, g, b))
     txt("F1", 9, 314, 176, "Signer: " + signer)
     txt("F1", 9, 314, 162, "Date: " + when)
-    txt("F1", 9, 314, 148, "Algorithm: ECDSA P-256, SHA-256")
+    txt("F1", 9, 314, 148, "Algorithm: " + algo)
     txt("F1", 8, 314, 132, "Any change to this file breaks the signature.", (0.4, 0.43, 0.5))
     txt("F1", 8, 48, 132, "Signed electronically. Valid without a handwritten signature.", (0.4, 0.43, 0.5))
     # footer
     o.append("0.8 0.82 0.86 RG 0.5 w 48 70 m 547 70 l S")
-    txt("F1", 7.5, 48, 56, "TEST ISSUER - fictional person and organisation, created for the KeyProof prototype. Not a real public document.",
-        (0.55, 0.3, 0.3))
+    txt("F1", 7.5, 48, 56, footer or "TEST ISSUER - fictional person and organisation, created for the KeyProof prototype. Not a real public document.",
+        (0.55, 0.3, 0.3) if not footer else (0.35, 0.38, 0.45))
     txt("F1", 7.5, 48, 44, "Verify: open in any PDF reader > Signature panel, or upload to KeyProof.", (0.45, 0.48, 0.55))
     return "\n".join(o)
 
