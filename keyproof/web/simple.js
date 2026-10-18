@@ -59,6 +59,7 @@
       home_code: "Have a code from a landlord?",
       approved: "The landlord approved you",
       st_req: "Landlord’s request", st_docs: "Documents", st_proof: "Private proof", st_dep: "Deposit", sl_desc: "Describe your tenant", sl_pub: "Request published", sl_res: "Result",
+      wdk_title: "Your wallet", wdk_text: "Self-custodial wallet built on Tether WDK. Your keys stay on this device.", wdk_addr: "Address", wdk_bal: "Balance", wdk_off: "Wallet service not running.",
       wallet_title: "In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
       wallet_use: "Use these credentials", wallet_none: "Nothing in your wallet yet.", wallet_arriving: "Credentials are on their way to your wallet (about 1–2 minutes)…",
       or_pdf: "Or add signed PDF documents:", issuer: "Issuer",
@@ -140,6 +141,7 @@
       home_code: "Hai un codice da un proprietario?",
       approved: "Il proprietario ti ha approvato",
       st_req: "Richiesta", st_docs: "Documenti", st_proof: "Prova privata", st_dep: "Deposito", sl_desc: "Descrivi l’inquilino", sl_pub: "Richiesta pubblicata", sl_res: "Risultato",
+      wdk_title: "Il tuo portafoglio", wdk_text: "Portafoglio non custodial basato su Tether WDK. Le chiavi restano su questo dispositivo.", wdk_addr: "Indirizzo", wdk_bal: "Saldo", wdk_off: "Servizio portafoglio non attivo.",
       wallet_title: "Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
       wallet_use: "Usa queste credenziali", wallet_none: "Ancora niente nel portafoglio.", wallet_arriving: "Le credenziali stanno arrivando (circa 1–2 minuti)…",
       or_pdf: "Oppure aggiungi documenti PDF firmati:", issuer: "Ente",
@@ -425,6 +427,20 @@
           a.amount != null ? S.eur(a.amount) + (a.type === "rental" ? "/yr" : "") : "", a.issued ? new Date(a.issued + "T00:00:00Z").toLocaleDateString(lang, { timeZone: "UTC" }) : "",
           a.reference ? S.t("real_ref") + " " + a.reference : ""].filter(Boolean).map(S.esc).join(" · ")}</div>` : ""}
       ${pc ? pc.notes.map((n) => `<div class="aiNote ${n.ok ? "ok" : "bad"}">${S.icon(n.ok ? "check" : "alert", 15)} ${S.esc(n.text)}</div>`).join("") : ""}</div>`;
+  };
+  // Tenant's self-custodial wallet on Tether WDK (local service)
+  S.wdkCard = () => `<div class="card" id="wdkCard"><h2 class="withicon">${S.icon("key")} ${S.esc(S.t("wdk_title"))} <span class="pillTag">Tether WDK</span></h2>
+    <p class="dim small">${S.esc(S.t("wdk_text"))}</p><div id="wdkBox"><span class="spinner"></span></div></div>`;
+  S.fillWdk = async () => {
+    const box = document.getElementById("wdkBox"); if (!box) return;
+    const w = await S.api("/api/tenant/wdk").catch(() => ({ ok: false }));
+    if (!document.getElementById("wdkBox")) return;
+    if (!w.ok) { box.innerHTML = `<p class="dim small">${S.esc(S.t("wdk_off"))}</p>`; return; }
+    const b = w.balance;
+    const sats = b == null ? "—" : typeof b === "object" ? Object.entries(b).map(([k, v]) => `${k}: ${v}`).join(" · ") : `${Number(b).toLocaleString()} sats`;
+    box.innerHTML = `<div class="shareGrid"><div><dl class="receipt"><dt>${S.esc(S.t("wdk_addr"))}</dt><dd class="mono">${S.esc(w.address.slice(0, 14))}…${S.esc(w.address.slice(-6))}</dd>
+      <dt>${S.esc(S.t("wdk_bal"))}</dt><dd>${S.esc(sats)}</dd><dt>Network</dt><dd>${S.esc(w.network)}</dd></dl></div>
+      <div class="qr small">${S.qrSvg("bitcoin:" + w.address)}</div></div>`;
   };
   // Presenter mode (set on the admin page, this browser only): shows sample-document shortcuts
   S.presenter = () => { try { return localStorage.getItem("kp-presenter") === "1"; } catch (e) { return false; } };

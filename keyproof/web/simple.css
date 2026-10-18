@@ -233,3 +233,5 @@ main, .card, .doneGrid > * { min-width: 0; }
 .warnText { color: var(--wait); } .item .icon.warn { background: var(--wait-bg); color: var(--wait); }
 .btn.small { font-size: .82rem; padding: 4px 0; } .rm { color: var(--faint); margin-top: 6px; } .rm:hover { color: var(--bad); }
 .sexRow .sexIcon { width: 48px; display: grid; place-items: center; color: var(--dim); }
+.pillTag { font-size: .7rem; font-weight: 650; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; background: rgba(38, 161, 123, .16); color: #4fd1a5; margin-left: 6px; }
+.qr.small svg { width: 120px; height: 120px; }

@@ -1,0 +1,1 @@
+{ "name": "keyproof-wdk", "private": true, "type": "module", "dependencies": { "@utexo/wdk-wallet-rgb": "2.0.3" } }

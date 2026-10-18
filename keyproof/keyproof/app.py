@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 import traceback
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -488,6 +489,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"real": False})
             return self._send(200, {"real": True, "wallets": DEMO.rgb.overview(sync="sync=1" in self.path), "fee_rate": DEMO.rgb.fee,
                                     "usd_asset": DEMO.rgb.state.get("usd_asset"), "explorer": rgb.EXPLORER})
+        if path == "/api/tenant/wdk":
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:8011/wallet", timeout=20) as r:
+                    return self._send(200, json.load(r))
+            except Exception as e:
+                return self._send(200, {"ok": False, "error": f"WDK wallet service not running ({type(e).__name__})"})
         if path == "/api/tenant/wallet":
             with DEMO.lock:
                 return self._send(200, {"credentials": [{k: v for k, v in c.items() if k != "card"} | {"type": c["card"]["type"] if c.get("card") else None}

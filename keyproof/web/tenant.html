@@ -92,7 +92,7 @@ function screenDocs() {
             ${rej}${aiSummary()}<div class="items">${rows}</div>
             ${extraDocs()}${realDocs()}
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
-          <div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
+          ${KP.wdkCard()}<div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
 }
 
 function aiSummary() {
@@ -170,6 +170,7 @@ function screenAfter() {
   }
   const links = S.tenant.log.filter((l) => l.link).map((l) => `<li>${esc(l.text)} – <a href="${l.link}" target="_blank" rel="noopener">${l.link.split("/").pop().slice(0, 16)}…</a></li>`).join("");
   html += `<details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>${links}<li>Approval token: ${esc(ap.asset_id)}</li></ul></div></details></div>`;
+  html += KP.wdkCard();
   return html;
 }
 
@@ -263,7 +264,7 @@ async function fillWallet() {
 
 // assistant texts (local AI), loaded after the screen is shown
 async function fillHelpers() {
-  fillWallet();
+  fillWallet(); KP.fillWdk();
   if ($("help1") && S.request) {
     const r = S.request.rules;
     const h = await KP.explain("request", { items: KP.reqs(r).map((x) => x.text) }, "req" + r.requestId);
