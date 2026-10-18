@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof – Receipt</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #eef1f6; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif; color: #111827; }
+  .page { max-width: 760px; margin: 32px auto; background: #fff; border-radius: 14px; box-shadow: 0 10px 40px -18px rgba(0,0,0,.35); overflow: hidden; }
+  .band { background: #0f2a5c; color: #fff; padding: 26px 36px; display: flex; align-items: center; gap: 14px; }
+  .band .brand { font-weight: 700; font-size: 1.3rem; } .band .sp { flex: 1; } .band .no { opacity: .8; font-size: .9rem; }
+  .body { padding: 30px 36px 36px; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; } .sub { color: #6b7280; margin: 0 0 24px; }
+  .ok { display: inline-flex; gap: 8px; align-items: center; background: #e7f8ef; color: #0f7a46; font-weight: 600; padding: 6px 12px; border-radius: 999px; font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; }
+  td { padding: 10px 0; border-bottom: 1px solid #edf0f4; vertical-align: top; }
+  td:first-child { color: #6b7280; width: 38%; font-size: .9rem; } td:last-child { font-weight: 560; word-break: break-all; }
+  .checks div { padding: 4px 0; } .checks div::before { content: "✓  "; color: #0f7a46; font-weight: 700; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; font-weight: 500; }
+  .note { color: #4b5563; font-size: .88rem; background: #f6f8fb; border-radius: 10px; padding: 14px 16px; }
+  .foot { color: #9ca3af; font-size: .78rem; margin-top: 18px; }
+  .bar { max-width: 760px; margin: 18px auto 0; display: flex; gap: 10px; justify-content: flex-end; padding: 0 12px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 10px 18px; background: #2563eb; color: #fff; cursor: pointer; }
+  a { color: #2563eb; }
+  @media print { body { background: #fff; } .bar { display: none; } .page { box-shadow: none; margin: 0; max-width: none; border-radius: 0; } }
+  @media (max-width: 600px) { .band, .body { padding-left: 20px; padding-right: 20px; } td:first-child { width: 42%; } }
+</style>
+</head>
+<body>
+<div class="bar"><button onclick="print()">Print / Save as PDF</button></div>
+<div class="page" id="page"><div class="body">Loading…</div></div>
+<script src="simple.js"></script>
+<script>
+const { esc, t } = KP;
+(async () => {
+  const S = await KP.api("/api/state");
+  const b = await KP.api("/api/proof").catch(() => ({}));
+  const req = S.request;
+  if (!req) { document.getElementById("page").innerHTML = '<div class="body">No completed application yet.</div>'; return; }
+  const r = req.rules, L = req.listing || {};
+  const dep = S.landlord.deposit || S.tenant.deposit || {};
+  const hash = b.proof && window.crypto && crypto.subtle ? Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(b.proof)))))
+    .map((x) => x.toString(16).padStart(2, "0")).join("") : "";
+  const link = (u, label) => u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(label || u.split("/").pop().slice(0, 20) + "…")}</a>` : "—";
+  const date = new Date().toLocaleString(KP.lang(), { dateStyle: "long", timeStyle: "short" });
+  const row = (k, v) => `<tr><td>${esc(k)}</td><td>${v}</td></tr>`;
+  document.title = "KeyProof receipt " + req.code;
+  document.getElementById("page").innerHTML = `
+    <div class="band"><span class="brand">KeyProof</span><span class="sp"></span><span class="no">${esc(t("r_code"))} ${esc(req.code)}</span></div>
+    <div class="body">
+      <h1>${esc(t("r_title"))}</h1><p class="sub">${esc(date)}</p>
+      <span class="ok">✓ ${esc(t("l_ok"))}</span>
+      <table>
+        ${row(t("r_flat"), esc([L.address, L.kind !== undefined && L.kind !== "" ? KP.kindName(L.kind) : ""].filter(Boolean).join(" · ") || "—"))}
+        ${L.landlord ? row(t("f_landlord"), esc(L.landlord)) : ""}
+        ${L.move_in ? row(t("f_movein"), esc(new Date(L.move_in + "T00:00:00Z").toLocaleDateString(KP.lang(), { dateStyle: "long", timeZone: "UTC" }))) : ""}
+        ${row(t("f_rent"), esc(KP.eur(req.rent)) + esc(t("per_month")))}
+        ${row(t("r_checks"), `<div class="checks">${KP.ticked(r).map((s) => `<div>${esc(KP.ruleText(s, r))}</div>`).join("")}</div>`)}
+        ${row(t("r_amount"), dep.amount ? esc(KP.eur(dep.amount)) + " (TUSDT, RGB)" : "—")}
+        ${row(t("r_tx"), link(b.deposit && b.deposit.tx))}
+        ${row(t("r_appr_tx"), link(b.approval_tx))}
+        ${row(t("r_proof"), `<span class="mono">${esc(b.approval_token || (S.tenant.approval || {}).asset_id || "—")}</span>`)}
+        ${row("Proof (SHA-256)", `<span class="mono">${hash || "—"}</span>`)}
+      </table>
+      <div class="note">${esc(t("r_note"))}</div>
+      <div class="foot">${S.mode.rgb === "real" ? "Settled on Bitcoin test network (Mutinynet) with RGB." : "Simulated RGB settlement."} Generated by KeyProof.</div>
+    </div>`;
+})();
+</script>
+</body>
+</html>

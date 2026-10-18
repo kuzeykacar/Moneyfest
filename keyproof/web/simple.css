@@ -181,3 +181,43 @@ footer.foot a:hover, footer.foot button:hover { color: var(--dim); }
 
 .badText { color: var(--bad); } #zkRes { font-weight: 650; }
 .zkcmd { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--dim); overflow-x: auto; white-space: nowrap; margin-top: 6px; }
+
+/* Listing card (the flat a request is for) */
+.listing { display: flex; gap: 18px; align-items: center; padding: 18px 20px; border-radius: 18px; background: var(--raise); border: 1px solid var(--line); margin: 6px 0 18px; }
+.listing .lIcon { flex: none; width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; background: rgba(59, 130, 246, .14); color: var(--brand2); }
+.listing .lBody { flex: 1; min-width: 0; }
+.listing .lTitle { font-weight: 650; font-size: 1.08rem; }
+.listing .lMeta { color: var(--dim); font-size: .88rem; }
+.listing .lPrice { text-align: right; flex: none; }
+.listing .lRent { font-weight: 700; font-size: 1.2rem; }
+@media (max-width: 640px) { .listing { flex-wrap: wrap; } .listing .lPrice { text-align: left; width: 100%; } }
+.formGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 12px 0 4px; }
+.formGrid label { display: grid; gap: 6px; font-size: .85rem; color: var(--dim); }
+.formGrid input, .formGrid select { width: 100%; }
+
+/* Drop zone for signed PDFs */
+.drop { border: 1.5px dashed var(--line2); border-radius: 18px; padding: 26px 20px; text-align: center; margin: 14px 0 18px; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--brand2); background: rgba(59, 130, 246, .08); }
+.drop .dTitle { font-weight: 620; display: flex; gap: 10px; align-items: center; justify-content: center; }
+.drop .dHint { color: var(--faint); font-size: .85rem; margin-top: 8px; }
+
+/* Home page */
+.homeHero { padding: clamp(28px, 6vw, 80px) 0 10px; max-width: 980px; }
+.homeHero h1 { font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.08; letter-spacing: -.02em; margin: 0 0 16px; }
+.homeHero p { color: var(--dim); font-size: 1.1rem; max-width: 760px; }
+.homeGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; margin-top: 30px; }
+.homeGrid .card { margin: 0; }
+.kicker { text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; color: var(--brand2); font-weight: 650; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 34px; }
+.how .step { padding: 18px 4px; border-top: 1px solid var(--line2); }
+.how .step b { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
+.how .step p { color: var(--dim); margin: 0; font-size: .92rem; }
+/* text inputs and selects in forms */
+.formGrid input:not([type]), .formGrid input[type=text], .formGrid select { font: inherit; color: var(--ink); background: var(--bg2); border: 1px solid var(--line2); border-radius: 14px; padding: 12px 14px; color-scheme: dark; }
+.formGrid select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%), linear-gradient(135deg, var(--dim) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 36px; }
+label.drop { display: block; cursor: pointer; }
+/* never wider than the screen */
+main, .card, .doneGrid > * { min-width: 0; }
+.doneGrid { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+.zkcmd { max-width: 100%; }

@@ -33,6 +33,25 @@ import rgb  # noqa: E402
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WEB = os.path.join(ROOT, "web")
 PORT = int(os.environ.get("PORT", "8010"))
+HOST = os.environ.get("HOST", "0.0.0.0")   # reachable from phones on the same Wi-Fi
+
+
+def lan_ip():
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("10.255.255.255", 1))    # no packet is sent; just picks the Wi-Fi address
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
+# Other devices (phones) may only use the tenant side. Wallets, landlord, issuer, reset stay on this Mac.
+REMOTE_GET_BLOCK = ("/admin.html", "/wallets.html", "/dev.html", "/issuer.html", "/landlord.html", "/api/wallets",
+                    "/api/landlord/", "/api/ping")
+REMOTE_POST_OK = ("/api/ai/explain", "/api/tenant/")
 TODAY = os.environ.get("KEYPROOF_TODAY", "2026-10-18")
 SLOT_OF_TYPE = {1: "identity", 2: "income", 3: "occupation", 4: "savings", 5: "guarantor"}
 
@@ -77,7 +96,7 @@ class Demo:
         out = ai.landlord_rules(text)
         return out
 
-    def publish(self, rules, rent, deposit):
+    def publish(self, rules, rent, deposit, listing=None):
         rules = dict(rules)
         rules["today"] = TODAY
         rules["maxAgeDays"] = 90
@@ -88,7 +107,9 @@ class Demo:
         code = code[:4] + "-" + code[4:]
         self.owner_key = secrets.token_urlsafe(16)
         self.request = {"rules": rules, "rent": int(rent or 0), "deposit": int(deposit or 0),
-                        "published": time.strftime("%H:%M:%S"), "code": code}
+                        "published": time.strftime("%H:%M:%S"), "code": code,
+                        "listing": {k: str(v)[:120] for k, v in (listing or {}).items()
+                                    if k in ("address", "kind", "move_in", "landlord")}}
         self.landlord.update(result=None, deposit=None, seen=None)
         self.tenant.update(approval=None, deposit=None, pending_payment=None)
         ticked = [k for k, v in rules["checks"].items() if v]
@@ -148,7 +169,7 @@ class Demo:
     ISSUER_FILES = {1: ("comune", "Identity credential"), 2: ("bank", "Income credential"),
                     3: ("poli", "Enrolment credential"), 4: ("bank", "Savings credential"),
                     5: ("bank", "Guarantor credential")}
-    DEMO_PDF = {1: "1_identity.pdf", 2: "2_income.pdf", 3: "3_enrolment.pdf", 4: "4_savings.pdf", 5: "5_guarantor.pdf"}
+    DEMO_PDF = {1: "Certificato_anagrafico_Elena_Rossi.pdf", 2: "Income_statement_Elena_Rossi.pdf", 3: "Certificato_iscrizione_Elena_Rossi.pdf", 4: "Balance_certificate_Elena_Rossi.pdf", 5: "Guarantor_income_Marco_Rossi.pdf"}
 
     def issuer_send(self, types):
         """Issuers send the tenant's signed data cards straight to the tenant's RGB wallet."""
@@ -263,6 +284,7 @@ class Demo:
             "balances": self.rgb.balances(),
             "trusted": self.trusted,
             "issuer": self._issuer_state(),
+            "share_base": f"http://{lan_ip()}:{PORT}",
         }
 
 
@@ -307,11 +329,17 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _local(self):
+        ip = self.client_address[0]
+        return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1") or ip == lan_ip()
+
     def do_GET(self):
         path = self.path.split("?")[0]
+        if not self._local() and path.startswith(REMOTE_GET_BLOCK):
+            return self._send(403, {"error": "only available on the host computer"})
         if path == "/api/state":
             with DEMO.lock:
-                return self._send(200, DEMO.state())
+                return self._send(200, DEMO.state() | {"host_view": self._local()})
         if path.startswith("/a/"):          # short application link -> tenant screen for that code
             code = path[3:].strip("/").upper()
             self.send_response(302)
@@ -363,6 +391,8 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(n) or b"{}")
         path = self.path
+        if not self._local() and not path.startswith(REMOTE_POST_OK):
+            return self._send(403, {"error": "only available on the host computer"})
         if path == "/api/ai/explain":
             try:
                 return self._send(200, ai.explain(body.get("kind", "request"), body.get("lang", "en"),
@@ -381,7 +411,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif path == "/api/landlord/parse":
                     out = DEMO.parse(body.get("text", ""))
                 elif path == "/api/landlord/publish":
-                    out = DEMO.publish(body["rules"], body.get("rent"), body.get("deposit"))
+                    out = DEMO.publish(body["rules"], body.get("rent"), body.get("deposit"), body.get("listing"))
                 elif path == "/api/landlord/result":
                     out = DEMO.result(body)
                 elif path == "/api/tenant/upload":
@@ -431,4 +461,5 @@ if __name__ == "__main__":
     threading.Thread(target=_watch, daemon=True).start()
     print(f"KeyProof running at http://127.0.0.1:{PORT}  (rgb={'real' if DEMO.rgb.real else 'simulated'}, "
           f"ai={'qvac' if not ai.USE_FAKE else 'keywords'})", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    print(f"Phones on the same Wi-Fi: http://{lan_ip()}:{PORT}", flush=True)
+    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

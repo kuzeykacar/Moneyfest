@@ -22,6 +22,19 @@
 
   const T = {
     en: {
+      drop: "Drag your signed PDFs here", drop_or: "or", drop_choose: "Choose files", drop_hint: "Add them all at once – KeyProof sorts them for you. Files stay on this device.",
+      use_sample: "Use sample", presenter: "Presenter mode",
+      flat: "The flat", l_flat: "Your flat", f_address: "Address", f_kind: "Type", f_movein: "Move-in", f_landlord: "Landlord", f_rent: "Rent", f_deposit: "Deposit", per_month: "/month",
+      kinds: "Room in shared flat|Studio|1-bedroom flat|2-bedroom flat|3-bedroom flat",
+      receipt_dl: "Print or save receipt", r_flat: "Flat", r_code: "Application", r_checks: "Requirements met", r_appr_tx: "Approval on Bitcoin",
+      r_title: "Rental application receipt", r_note: "This receipt shows only which requirements were met. No personal documents were shared. The attached proof can be checked by anyone with open-source tools.",
+      hero1: "Rent a flat without handing over your documents.", hero2: "Tenants prove they meet your requirements from documents their bank, comune and university already signed. Landlords see only a yes for each requirement.",
+      for_landlords: "For landlords", for_tenants: "For tenants", start_req: "Create a tenant check", start_req_text: "Describe your ideal tenant, publish, and share the link on your listing.",
+      apply_text: "Got a link or code from a landlord? Enter it to apply.",
+      how1: "Signed by the issuer", how1t: "Your bank, comune or university already signs your documents digitally.",
+      how2: "Proved on your device", how2t: "A zero-knowledge proof shows you meet the rules. Your data never leaves your computer.",
+      how3: "Settled on Bitcoin", how3t: "The approval and the deposit move as RGB assets on Bitcoin.",
+      admin: "Admin",
       zk_title: "The proof", zk_text: "Anyone can check this proof independently – a bank, a notary or a lawyer – without trusting KeyProof. It contains no personal data.",
       zk_dl: "Download proof", zk_check: "Check again now", zk_ok: "Proof valid", zk_bad: "Proof NOT valid", zk_how: "Independent check (developers):",
       completed: "Completed",
@@ -84,6 +97,17 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      drop: "Trascina qui i tuoi PDF firmati", drop_or: "oppure", drop_choose: "Scegli i file", drop_hint: "Aggiungili tutti insieme: KeyProof li ordina per te. I file restano su questo dispositivo.",
+      use_sample: "Usa esempio", flat: "L'appartamento", l_flat: "Il tuo appartamento", f_address: "Indirizzo", f_kind: "Tipo", f_movein: "Ingresso", f_landlord: "Proprietario", f_rent: "Affitto", f_deposit: "Deposito", per_month: "/mese",
+      kinds: "Stanza in appartamento condiviso|Monolocale|Bilocale|Trilocale|Quadrilocale",
+      receipt_dl: "Stampa o salva la ricevuta", r_flat: "Appartamento", r_code: "Candidatura", r_checks: "Requisiti soddisfatti", r_appr_tx: "Approvazione su Bitcoin",
+      r_title: "Ricevuta della candidatura", r_note: "Questa ricevuta mostra solo quali requisiti sono soddisfatti. Nessun documento personale è stato condiviso. La prova allegata può essere verificata da chiunque con strumenti open source.",
+      hero1: "Affitta casa senza consegnare i tuoi documenti.", hero2: "Gli inquilini dimostrano di avere i requisiti con documenti già firmati da banca, comune e università. Il proprietario vede solo un sì per ogni requisito.",
+      for_landlords: "Per i proprietari", for_tenants: "Per gli inquilini", start_req: "Crea una verifica inquilino", start_req_text: "Descrivi l'inquilino ideale, pubblica e condividi il link nel tuo annuncio.",
+      apply_text: "Hai un link o un codice da un proprietario? Inseriscilo per candidarti.",
+      how1: "Firmato dall'ente", how1t: "Banca, comune o università firmano già digitalmente i tuoi documenti.",
+      how2: "Dimostrato sul tuo dispositivo", how2t: "Una prova a conoscenza zero mostra che rispetti le regole. I tuoi dati non lasciano il computer.",
+      how3: "Regolato su Bitcoin", how3t: "L'approvazione e il deposito si muovono come asset RGB su Bitcoin.",
       zk_title: "La prova", zk_text: "Chiunque può verificare questa prova in modo indipendente – una banca, un notaio o un avvocato – senza fidarsi di KeyProof. Non contiene dati personali.",
       zk_dl: "Scarica la prova", zk_check: "Verifica di nuovo", zk_ok: "Prova valida", zk_bad: "Prova NON valida", zk_how: "Verifica indipendente (sviluppatori):",
       completed: "Completato",
@@ -146,6 +170,17 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      drop: "İmzalı PDF'lerinizi buraya sürükleyin", drop_or: "veya", drop_choose: "Dosya seçin", drop_hint: "Hepsini birden ekleyin, KeyProof sıralar. Dosyalar bu cihazda kalır.",
+      use_sample: "Örneği kullan", flat: "Daire", l_flat: "Daireniz", f_address: "Adres", f_kind: "Tür", f_movein: "Taşınma", f_landlord: "Ev sahibi", f_rent: "Kira", f_deposit: "Depozito", per_month: "/ay",
+      kinds: "Paylaşımlı evde oda|Stüdyo|1+1|2+1|3+1",
+      receipt_dl: "Makbuzu yazdır veya kaydet", r_flat: "Daire", r_code: "Başvuru", r_checks: "Karşılanan şartlar", r_appr_tx: "Bitcoin'de onay",
+      r_title: "Kira başvurusu makbuzu", r_note: "Bu makbuz yalnızca hangi şartların karşılandığını gösterir. Hiçbir kişisel belge paylaşılmadı. Ekteki kanıtı herkes açık kaynak araçlarla doğrulayabilir.",
+      hero1: "Belgelerinizi teslim etmeden ev kiralayın.", hero2: "Kiracılar, bankanın, belediyenin ve üniversitenin zaten imzaladığı belgelerle şartları karşıladığını kanıtlar. Ev sahibi her şart için yalnızca bir evet görür.",
+      for_landlords: "Ev sahipleri için", for_tenants: "Kiracılar için", start_req: "Kiracı kontrolü oluştur", start_req_text: "İdeal kiracınızı tarif edin, yayınlayın ve bağlantıyı ilanınızda paylaşın.",
+      apply_text: "Ev sahibinden bağlantı veya kod mu aldınız? Başvurmak için girin.",
+      how1: "Kurum tarafından imzalı", how1t: "Bankanız, belediyeniz veya üniversiteniz belgelerinizi zaten dijital olarak imzalıyor.",
+      how2: "Cihazınızda kanıtlanır", how2t: "Sıfır bilgi kanıtı kurallara uyduğunuzu gösterir. Verileriniz bilgisayarınızdan çıkmaz.",
+      how3: "Bitcoin'de tamamlanır", how3t: "Onay ve depozito Bitcoin üzerinde RGB varlığı olarak taşınır.",
       zk_title: "Kanıt", zk_text: "Bu kanıtı herkes bağımsız olarak doğrulayabilir – bir banka, noter veya avukat – KeyProof'a güvenmeden. Kişisel veri içermez.",
       zk_dl: "Kanıtı indir", zk_check: "Şimdi tekrar doğrula", zk_ok: "Kanıt geçerli", zk_bad: "Kanıt GEÇERSİZ", zk_how: "Bağımsız doğrulama (geliştiriciler):",
       completed: "Tamamlandı",
@@ -246,7 +281,7 @@
   };
 
   S.SLOTS = ["identity", "income", "occupation", "savings", "guarantor"];
-  S.SAMPLE = { identity: "1_identity.pdf", income: "2_income.pdf", occupation: "3_enrolment.pdf", savings: "4_savings.pdf", guarantor: "5_guarantor.pdf" };
+  S.SAMPLE = { identity: "Certificato_anagrafico_Elena_Rossi.pdf", income: "Income_statement_Elena_Rossi.pdf", occupation: "Certificato_iscrizione_Elena_Rossi.pdf", savings: "Balance_certificate_Elena_Rossi.pdf", guarantor: "Guarantor_income_Marco_Rossi.pdf" };
   // A landlord rule in plain words
   S.ruleText = (slot, r) => {
     if (slot === "identity") return S.t("identity");
@@ -317,7 +352,8 @@
         ${txLink ? `<dt>${S.esc(S.t("r_tx"))}</dt><dd><a href="${txLink}" target="_blank" rel="noopener">${S.esc(S.t("view_tx"))} ↗</a></dd>` : ""}</dl></div>
       <div class="card"><h2 class="withicon">${S.icon("lock")} ${S.esc(S.t("private_kept"))}</h2><p class="dim">${S.esc(privateText)}</p>
         <h2 class="withicon" style="margin-top:18px">${S.icon("home")} ${S.esc(S.t("next_title"))}</h2><p class="dim">${S.esc(nextText)}</p>
-        <button class="btn secondary" id="again" style="margin-top:8px">${S.esc(againLabel)}</button></div>
+        <div class="row" style="margin-top:8px"><a class="btn" href="/receipt.html" target="_blank" rel="noopener">${S.icon("file", 18)} ${S.esc(S.t("receipt_dl"))}</a>
+        <button class="btn secondary" id="again">${S.esc(againLabel)}</button></div></div>
     </div>
     <div class="card"><h2 class="withicon">${S.icon("shield")} ${S.esc(S.t("zk_title"))}</h2><p class="dim">${S.esc(S.t("zk_text"))}</p>
       <div class="row"><button class="btn" id="zkDl">${S.icon("file", 18)} ${S.esc(S.t("zk_dl"))}</button>
@@ -347,6 +383,20 @@
         res.innerHTML = `<span class="${ok ? "okText" : "badText"}">${S.icon(ok ? "check" : "x", 18)} ${S.esc(S.t(ok ? "zk_ok" : "zk_bad"))}</span>`;
       } catch (e) { res.innerHTML = `<span class="badText">${S.esc(e.message)}</span>`; }
     };
+  };
+  // Presenter mode (set on the admin page, this browser only): shows sample-document shortcuts
+  S.presenter = () => { try { return localStorage.getItem("kp-presenter") === "1"; } catch (e) { return false; } };
+  S.kindName = (i) => (S.t("kinds").split("|")[+i] || "");
+  // The flat a request is for (address, type, move-in, rent, deposit)
+  S.listingHtml = (req, title) => {
+    const L = req.listing || {};
+    const date = L.move_in ? new Date(L.move_in + "T00:00:00Z").toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : "";
+    return `<div class="listing"><div class="lIcon">${S.icon("home", 26)}</div><div class="lBody">
+      <div class="small dim">${S.esc(title || S.t("flat"))}</div>
+      <div class="lTitle">${S.esc(L.address || "—")}</div>
+      <div class="lMeta">${[L.kind !== undefined && L.kind !== "" ? S.esc(S.kindName(L.kind)) : "", date ? S.esc(S.t("f_movein")) + " " + S.esc(date) : "", L.landlord ? S.esc(S.t("f_landlord")) + ": " + S.esc(L.landlord) : ""].filter(Boolean).join(" · ")}</div></div>
+      <div class="lPrice"><div class="lRent">${S.eur(req.rent)}<span class="dim small">${S.esc(S.t("per_month"))}</span></div>
+      <div class="small dim">${S.esc(S.t("f_deposit"))} ${S.eur(req.deposit)}</div></div></div>`;
   };
   window.KP = S;
 })();

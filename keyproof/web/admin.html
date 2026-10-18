@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyProof – Admin</title>
+<link rel="stylesheet" href="simple.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><a class="logo" href="/">KeyProof</a><span class="who" id="who"></span><span class="sp"></span></header>
+  <div class="app single"><main>
+    <div class="card"><h1>Admin</h1>
+      <p class="dim">Only reachable on this computer. Phones and other devices get “only available on the host computer”.</p>
+      <div class="item"><div class="icon" id="i1"></div><div class="body"><div class="title">Phone address</div>
+        <div class="dim small">Phones on the same Wi-Fi open tenant links at <code id="base">…</code></div></div></div>
+      <div class="item"><div class="icon" id="i2"></div><div class="body"><div class="title">Sample signed documents</div>
+        <div class="dim small">Drag them from the <code>keyproof/demo_docs</code> folder onto the tenant screen. The file ending in <code>_EDITED</code> is the tampered one (income changed from 1,650 to 2,650).</div></div></div>
+      <label class="toggle"><input type="checkbox" id="presenter"><div><div class="title">Presenter mode</div>
+        <div class="dim small">Shows a “Use sample” button next to each document on the tenant screen (this browser only). Backup if drag-and-drop fails during the pitch.</div></div></label>
+    </div>
+    <div class="card"><h2>Tools</h2>
+      <div class="row">
+        <a class="btn secondary" href="/wallets.html">Wallets</a>
+        <a class="btn secondary" href="/issuer.html">Issuer: send credentials</a>
+        <a class="btn secondary" href="/dev.html">Developer view</a>
+        <button class="btn" id="reset">Start over (clear request)</button>
+      </div>
+      <p class="small dim" id="mode" style="margin-top:14px"></p>
+    </div>
+  </main></div>
+</div>
+<script src="simple.js"></script>
+<script>
+const { $ } = KP;
+KP.logo(); KP.badge("who", "shield", "Admin");
+$("i1").innerHTML = KP.icon("link"); $("i2").innerHTML = KP.icon("file");
+$("presenter").checked = KP.presenter();
+$("presenter").onchange = () => { try { localStorage.setItem("kp-presenter", $("presenter").checked ? "1" : "0"); } catch (e) { /* ignore */ } };
+KP.api("/api/state").then((s) => {
+  $("base").textContent = s.share_base;
+  $("mode").textContent = `RGB: ${s.mode.rgb === "real" ? "real (Bitcoin Mutinynet)" : "simulated"} · AI: ${s.mode.ai === "qvac" ? "QVAC local model" : "keyword fallback"}`;
+});
+$("reset").onclick = async () => {
+  if (await KP.confirm("Start over?", "Clears the current request, documents and results. Wallets and money are not touched.", "Start over")) {
+    await KP.api("/api/reset", {}); KP.alert("Cleared. Open the landlord screen to publish a new request.", "Done");
+  }
+};
+</script>
+</body>
+</html>

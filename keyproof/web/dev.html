@@ -198,11 +198,11 @@ let lastRejected = null;
 function showUpload(entry) { if (!entry.ok) lastRejected = entry; else lastRejected = null; }
 $("fileIn").onchange = (e) => uploadFiles(e.target.files);
 $("samplesBtn").onclick = async () => {
-  for (const n of ["1_identity.pdf", "2_income.pdf", "3_enrolment.pdf", "4_savings.pdf", "5_guarantor.pdf"])
+  for (const n of ["Certificato_anagrafico_Elena_Rossi.pdf", "Income_statement_Elena_Rossi.pdf", "Certificato_iscrizione_Elena_Rossi.pdf", "Balance_certificate_Elena_Rossi.pdf", "Guarantor_income_Marco_Rossi.pdf"])
     showUpload(await api("/api/tenant/sample", { name: n }));
   refresh();
 };
-$("fakeBtn").onclick = async () => { showUpload(await api("/api/tenant/sample", { name: "FAKE_income_edited.pdf" })); refresh(); };
+$("fakeBtn").onclick = async () => { showUpload(await api("/api/tenant/sample", { name: "Income_statement_Elena_Rossi_EDITED.pdf" })); refresh(); };
 
 function docHtml(d, rejected) {
   const pills = d.checks.map((c) => `<span class="pill ${c.ok ? "ok" : "bad"}" title="${esc(c.detail)}">${c.ok ? "✓" : "✗"} ${esc(c.check)}</span>`).join("");

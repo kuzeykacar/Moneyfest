@@ -18,13 +18,7 @@
     <aside class="side"><div class="stepinfo" id="stepinfo"></div><ol class="steps" id="progress"></ol></aside>
     <main id="main" aria-live="polite"></main>
   </div>
-  <footer class="foot">
-    <a href="/landlord.html" id="fLandlord"></a>
-    <a href="/issuer.html" id="fIssuer">Issuer</a>
-    <a href="/wallets.html" id="fWallets"></a>
-    <a href="/dev.html" id="fDev"></a>
-    <button id="fReset"></button>
-  </footer>
+  <footer class="foot" style="display:none"><a href="/admin.html" id="fAdmin"></a></footer>
 </div>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="box">
@@ -72,8 +66,7 @@ function screenRequest() {
   setProgress(1, 4);
   const r = S.request.rules;
   const items = KP.ticked(r).map((s) => `<div class="item"><div class="icon">${KP.icon("check")}</div><div class="body"><div class="title">${esc(KP.ruleText(s, r))}</div></div></div>`).join("");
-  return `<div class="card"><h1>${t("t1_title")}</h1>${items}
-            <p class="dim">${t("rent")}: <b>${eur(S.request.rent)}</b> · ${t("deposit")}: <b>${eur(S.request.deposit)}</b></p>
+  return `<div class="card">${KP.listingHtml(S.request)}<h1>${t("t1_title")}</h1>${items}
             <div id="help1"></div>
             <button class="btn block" id="next1">${t("t1_next")} →</button></div>`;
 }
@@ -88,13 +81,16 @@ function screenDocs() {
         <div class="${ok ? "okText" : "dim"}" style="margin-top:4px">${ok ? esc(t("original", { issuer: d.issuer })) : t("missing")}</div>
         ${ok ? "" : `<div class="actions row">
             <label class="btn secondary">${t("choose")}<input type="file" accept="application/pdf" class="hidden" data-slot="${s}"></label>
-            <button class="btn link" data-sample="${s}">${t("use_demo")}</button></div>`}
+            ${KP.presenter() ? `<button class="btn link" data-sample="${s}">${t("use_sample")}</button>` : ""}</div>`}
       </div></div>`;
   }).join("");
   const rej = rejected ? `<div class="notice bad"><b>${KP.icon("alert", 18)} ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
                           <div id="helpRej">${KP.helperHtml(rejected.help, rejected.source)}</div>` : "";
-  return `<div class="card wide-items"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}<div class="items">${rows}</div>
-            <div class="row" style="margin-top:12px"><button class="btn link" id="fake">${t("try_fake")}</button></div>
+  return `<div class="card wide-items"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>
+            ${docsReady() ? "" : `<label class="drop" id="drop"><div class="dTitle">${KP.icon("file", 22)} ${t("drop")}</div>
+              <div style="margin-top:10px"><span class="dim">${t("drop_or")}</span> <span class="btn secondary" style="margin-left:8px">${t("drop_choose")}</span></div>
+              <div class="dHint">${t("drop_hint")}</div><input type="file" accept="application/pdf" multiple class="hidden" id="dropIn"></label>`}
+            ${rej}<div class="items">${rows}</div>
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
           <div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
 }
@@ -186,7 +182,14 @@ function bind() {
   on("next2", () => { view = 3; render(true); });
   on("back2", () => { view = 2; proofError = null; render(true); });
   on("prove", makeProof);
-  on("fake", async () => handleUpload(await api("/api/tenant/sample", { name: "FAKE_income_edited.pdf" })));
+  const dz = $("drop");
+  if (dz) {
+    const many = async (files) => { for (const f of files) if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") await upload(f); };
+    $("dropIn").onchange = () => many([...$("dropIn").files]);
+    dz.ondragover = (e) => { e.preventDefault(); dz.classList.add("over"); };
+    dz.ondragleave = () => dz.classList.remove("over");
+    dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove("over"); many([...e.dataTransfer.files]); };
+  }
   on("send", () => ask(t("send_q"), t("send_detail"), t("yes_send"), async () => {
     try { await api("/api/tenant/send", proof); } catch (e) { KP.alert(e.message); }
     refresh(true);
@@ -254,13 +257,10 @@ function render(force) {
 }
 
 function labels() {
-  KP.badge("who", "user", t("tenant"));
-  $("fLandlord").textContent = t("landlord") + " →"; $("fWallets").textContent = t("wallets");
-  $("fDev").textContent = t("dev"); $("fReset").textContent = t("reset");
+  KP.badge("who", "user", t("tenant")); $("fAdmin").textContent = t("admin");
 }
-async function refresh(force) { try { S = await api("/api/state"); render(force); } catch (e) { console.error(e); } }
+async function refresh(force) { try { S = await api("/api/state"); document.querySelector(".foot").style.display = S.host_view ? "" : "none"; render(force); } catch (e) { console.error(e); } }
 $("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
-$("fReset").onclick = async () => { if (await KP.confirm(t("reset") + "?", "", t("reset"))) { await api("/api/reset", {}); proof = null; rejected = null; view = 1; refresh(true); } };
 KP.logo(); labels(); refresh(true); setInterval(() => refresh(false), 2500);
 // keep the rejection helper text fresh once the AI answers
 setInterval(() => { if (rejected && rejected.help && $("helpRej") && !$("helpRej").innerHTML) $("helpRej").innerHTML = KP.helperHtml(rejected.help, rejected.source); }, 500);

@@ -42,7 +42,7 @@ def _esc(text):
     return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def make_signed_pdf(lines, card, signer_name, key, cert, signed_at=None):
+def make_signed_pdf(lines, card, signer_name, key, cert, signed_at=None, raw=None):
     """Build a one-page PDF with `lines` of text and the data `card`, signed by `cert`/`key`.
 
     lines: list of (font, size, text); font "F1" regular or "F2" bold.
@@ -54,7 +54,7 @@ def make_signed_pdf(lines, card, signer_name, key, cert, signed_at=None):
         content.append(f"/{font} {size} Tf 1 0 0 1 56 {y} Tm ({_esc(text)}) Tj")
         y -= size + 12
     content.append("ET")
-    stream = "\n".join(content).encode("latin-1")
+    stream = (raw if raw is not None else "\n".join(content)).encode("latin-1")
 
     card_hex = json.dumps(card, separators=(",", ":")).encode().hex()
     m = signed_at.strftime("D:%Y%m%d%H%M%SZ")

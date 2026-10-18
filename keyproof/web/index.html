@@ -8,34 +8,51 @@
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><span class="logo">KeyProof</span><span class="sp"></span><span id="langBox"></span></header>
-  <div class="app single"><div class="card hero">
-    <h1 id="hText"></h1>
-    <p class="dim" id="hSub"></p>
-    <div style="display:grid;gap:14px;margin-top:20px">
-      <a class="btn block" href="/tenant.html" id="hTenant"></a>
-      <a class="btn secondary block" href="/landlord.html" id="hLandlord"></a>
-      <a class="btn secondary block" href="/issuer.html" id="hIssuer"></a>
+  <header class="top"><a class="logo" href="/">KeyProof</a><span class="sp"></span><span id="langBox"></span></header>
+  <section class="homeHero">
+    <h1 id="hero1"></h1>
+    <p id="hero2"></p>
+  </section>
+  <div class="homeGrid">
+    <div class="card">
+      <div class="kicker" id="kL"></div>
+      <h2 class="withicon" style="margin-top:8px"><span id="iL"></span><span id="startT"></span></h2>
+      <p class="dim" id="startX"></p>
+      <a class="btn block" href="/landlord.html" id="startB"></a>
     </div>
-    <div style="margin-top:26px"><div class="dim" id="hCode"></div>
-      <div class="row" style="margin-top:8px"><input id="codeIn" class="codeInput" placeholder="7F3K-92QD" maxlength="9" autocomplete="off">
-      <button class="btn secondary" id="openCode"></button></div></div>
-  </div></div>
-  <footer class="foot"><a href="/wallets.html" id="fWallets"></a><a href="/dev.html" id="fDev"></a></footer>
+    <div class="card">
+      <div class="kicker" id="kT"></div>
+      <h2 class="withicon" style="margin-top:8px"><span id="iT"></span><span id="applyT"></span></h2>
+      <p class="dim" id="applyX"></p>
+      <div class="row"><input id="codeIn" class="codeInput" placeholder="7F3K-92QD" maxlength="9" autocomplete="off" autocapitalize="characters">
+        <button class="btn" id="openCode"></button></div>
+    </div>
+  </div>
+  <div class="how">
+    <div class="step"><b id="h1"></b><p id="h1t"></p></div>
+    <div class="step"><b id="h2"></b><p id="h2t"></p></div>
+    <div class="step"><b id="h3"></b><p id="h3t"></p></div>
+  </div>
+  <footer class="foot" id="foot" style="display:none"><a href="/admin.html" id="fAdmin"></a></footer>
 </div>
 <script src="simple.js"></script>
 <script>
 const { $, t } = KP;
 function labels() {
-  $("hText").textContent = t("home_text"); $("hSub").textContent = t("home_title");
-  $("hTenant").innerHTML = KP.icon("user") + " " + t("home_tenant"); $("hLandlord").innerHTML = KP.icon("home") + " " + t("home_landlord");
-  $("hIssuer").innerHTML = KP.icon("landmark") + " " + t("issuer") + " · bank, comune, university";
-  $("fWallets").textContent = t("wallets"); $("fDev").textContent = t("dev");
-  $("hCode").textContent = t("home_code"); $("openCode").textContent = t("open") + " →";
+  $("hero1").textContent = t("hero1"); $("hero2").textContent = t("hero2");
+  $("kL").textContent = t("for_landlords"); $("kT").textContent = t("for_tenants");
+  $("iL").innerHTML = KP.icon("home", 24); $("iT").innerHTML = KP.icon("key", 24);
+  $("startT").textContent = t("start_req"); $("startX").textContent = t("start_req_text"); $("startB").textContent = t("start_req") + " →";
+  $("applyT").textContent = t("enter_title"); $("applyX").textContent = t("apply_text"); $("openCode").textContent = t("open") + " →";
+  $("h1").innerHTML = KP.icon("file", 20) + " " + KP.esc(t("how1")); $("h1t").textContent = t("how1t");
+  $("h2").innerHTML = KP.icon("lock", 20) + " " + KP.esc(t("how2")); $("h2t").textContent = t("how2t");
+  $("h3").innerHTML = KP.icon("shield", 20) + " " + KP.esc(t("how3")); $("h3t").textContent = t("how3t");
+  $("fAdmin").textContent = t("admin");
 }
 const go = () => { const c = KP.normCode($("codeIn").value); if (c) location.href = "/a/" + c; };
 $("openCode").onclick = go; $("codeIn").onkeydown = (e) => { if (e.key === "Enter") go(); };
 $("langBox").appendChild(KP.langSelect(labels)); KP.logo(); labels();
+KP.api("/api/state").then((s) => { if (s.host_view) $("foot").style.display = ""; }).catch(() => {});
 </script>
 </body>
 </html>

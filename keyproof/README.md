@@ -78,12 +78,13 @@ no "looks real" guessing, no metadata checks.
 3. App:
    - `scripts/run_demo.command`: simulated RGB, no bitcoin needed.
    - `scripts/run_real.command`: real RGB on Mutinynet (wallets must be funded first, see below).
-4. Open **http://127.0.0.1:8010**: choose **Tenant** or **Landlord** (simple screens, EN/IT/TR).
-Also: `/dev.html` (developer view, both sides on one page) and `/wallets.html` (wallets).
+4. Open **http://127.0.0.1:8010** (EN/IT/TR). Phones on the same Wi-Fi can open tenant links (the QR uses the Wi-Fi address);
+   landlord, wallets and admin only work on the host computer. `/admin.html`: wallets, issuer, developer view, start over, presenter mode.
 
-**Test flow:** landlord "Fill the form with local AI" → Publish → tenant "Try an edited (fake) PDF" (rejected) →
-"Use demo documents" → "Create zero-knowledge proof" → "Send approval via RGB" → wait 1–2 min →
-landlord sees ✓ → tenant confirms the deposit.
+**Test flow:** "Create a tenant check" → describe the tenant, the local AI fills the form → add the flat (address, type, move-in, rent, deposit) → Publish →
+share the link / code / QR → tenant opens it, sees the flat → drags the signed PDFs from `demo_docs/` (the `_EDITED` one is rejected) →
+"Create my private proof" → send (RGB approval token) → landlord sees ✓ → tenant pays the deposit (RGB stablecoin) →
+both see the completion screen, a printable receipt (`/receipt.html`) and the downloadable ZK proof.
 
 ### Real RGB setup (already done on Kuzey's Mac)
 - Wallets live in `data/wallets/{issuer,tenant,landlord}` (git-ignored, **never commit them**).
