@@ -114,6 +114,7 @@ specially protected (GDPR Art. 10) and landlords generally may not ask for it.
 | Test bitcoin from the faucet to our issuer wallet (100,000 sats) | [3243ddff…](https://mutinynet.com/tx/3243ddffd988652ca382ccd073bc33349468d0b382926b305f962b56825c7cf0) |
 | Bitcoin shared with the landlord wallet | [87f3ce7a…](https://mutinynet.com/tx/87f3ce7af2fc8dde3d9b446ec3f8811f7f3de9d6e98c1d72a0bf42dd4fedb6ff) |
 | 2,000 TUSDT (RGB stablecoin) to the tenant | [a255bf90…](https://mutinynet.com/tx/a255bf90c14c688ae80d1fa37e9e6bdd35109d49a3a3188629036778a22514a5) |
+| **3 credentials (identity, income, enrolment) as RGB tokens, issuers → tenant, one transaction** | [fa94519c…](https://mutinynet.com/tx/fa94519c3b22f806f26c751851ccf4eb1b093a5817d26ba79bfb50f29e1616a5) |
 | **Approval token (RGB UDA with the ZK proof) tenant → landlord** | [01bc272e…](https://mutinynet.com/tx/01bc272eb2a29629ac95907cca4377dcdf17f83af8d793ecd02324b69daa6655) |
 | **Deposit, 1,100 TUSDT, tenant → landlord** | [899d3dc8…](https://mutinynet.com/tx/899d3dc81d352a13112b651381921eeb1b1f4fb7f9d3210bcf1811b8b66e83ba) |
 
