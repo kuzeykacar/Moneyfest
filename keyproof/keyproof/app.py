@@ -211,6 +211,9 @@ class Demo:
             self.log("tenant", f"Issued approval token on RGB ({asset_id[:22]}...), proof attached.")
         tid = self.rgb.send_approval(asset_id)
         self.tenant["approval"] = {"asset_id": asset_id, "tid": tid, "status": "settling"}
+        self.proof_bundle = {"proof": proof, "publicSignals": public_signals, "requestId": req["rules"]["requestId"],
+                             "code": req.get("code"), "rules": req["rules"], "approval_token": asset_id,
+                             "approval_tx": self.rgb.link(tid) or tid}
         self.log("tenant", "Sent the approval token to the landlord's wallet (on-chain).", self.rgb.link(tid))
         return self.tenant["approval"]
 
@@ -321,6 +324,13 @@ class Handler(BaseHTTPRequestHandler):
             with DEMO.lock:
                 ok = bool(DEMO.request) and secrets.compare_digest(key, getattr(DEMO, "owner_key", "") or "")
             return self._send(200, {"owner": ok})
+        if path == "/api/proof":
+            with DEMO.lock:
+                b = dict(getattr(DEMO, "proof_bundle", None) or {})
+                d = DEMO.tenant.get("deposit")
+                if b and d:
+                    b["deposit"] = {"amount": d["amount"], "tx": DEMO.rgb.link(d["tid"]) or d["tid"]}
+            return self._send(200, b)
         if path == "/api/ping":
             return self._send(200, {"ok": True, "threads": [t.name for t in threading.enumerate()]})
         if path == "/api/wallets":

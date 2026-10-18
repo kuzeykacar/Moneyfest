@@ -22,6 +22,8 @@
 
   const T = {
     en: {
+      zk_title: "The proof", zk_text: "Anyone can check this proof independently – a bank, a notary or a lawyer – without trusting KeyProof. It contains no personal data.",
+      zk_dl: "Download proof", zk_check: "Check again now", zk_ok: "Proof valid", zk_bad: "Proof NOT valid", zk_how: "Independent check (developers):",
       completed: "Completed",
       done_title: "All done", done_t_sub: "Your deposit has arrived. Thank you for using KeyProof.", done_l_sub: "The deposit has arrived. Thank you for using KeyProof.",
       receipt: "Receipt", r_amount: "Deposit", r_date: "Date", r_proof: "Approval token", r_tx: "Payment",
@@ -82,6 +84,8 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      zk_title: "La prova", zk_text: "Chiunque può verificare questa prova in modo indipendente – una banca, un notaio o un avvocato – senza fidarsi di KeyProof. Non contiene dati personali.",
+      zk_dl: "Scarica la prova", zk_check: "Verifica di nuovo", zk_ok: "Prova valida", zk_bad: "Prova NON valida", zk_how: "Verifica indipendente (sviluppatori):",
       completed: "Completato",
       done_title: "Tutto fatto", done_t_sub: "Il tuo deposito è arrivato. Grazie per aver usato KeyProof.", done_l_sub: "Il deposito è arrivato. Grazie per aver usato KeyProof.",
       receipt: "Ricevuta", r_amount: "Deposito", r_date: "Data", r_proof: "Token di approvazione", r_tx: "Pagamento",
@@ -142,6 +146,8 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      zk_title: "Kanıt", zk_text: "Bu kanıtı herkes bağımsız olarak doğrulayabilir – bir banka, noter veya avukat – KeyProof'a güvenmeden. Kişisel veri içermez.",
+      zk_dl: "Kanıtı indir", zk_check: "Şimdi tekrar doğrula", zk_ok: "Kanıt geçerli", zk_bad: "Kanıt GEÇERSİZ", zk_how: "Bağımsız doğrulama (geliştiriciler):",
       completed: "Tamamlandı",
       done_title: "Her şey tamam", done_t_sub: "Depozitonuz ulaştı. KeyProof'u kullandığınız için teşekkürler.", done_l_sub: "Depozito ulaştı. KeyProof'u kullandığınız için teşekkürler.",
       receipt: "Makbuz", r_amount: "Depozito", r_date: "Tarih", r_proof: "Onay belirteci", r_tx: "Ödeme",
@@ -312,6 +318,35 @@
       <div class="card"><h2 class="withicon">${S.icon("lock")} ${S.esc(S.t("private_kept"))}</h2><p class="dim">${S.esc(privateText)}</p>
         <h2 class="withicon" style="margin-top:18px">${S.icon("home")} ${S.esc(S.t("next_title"))}</h2><p class="dim">${S.esc(nextText)}</p>
         <button class="btn secondary" id="again" style="margin-top:8px">${S.esc(againLabel)}</button></div>
-    </div>`;
+    </div>
+    <div class="card"><h2 class="withicon">${S.icon("shield")} ${S.esc(S.t("zk_title"))}</h2><p class="dim">${S.esc(S.t("zk_text"))}</p>
+      <div class="row"><button class="btn" id="zkDl">${S.icon("file", 18)} ${S.esc(S.t("zk_dl"))}</button>
+        <button class="btn secondary" id="zkCheck">${S.icon("shield", 18)} ${S.esc(S.t("zk_check"))}</button><span id="zkRes"></span></div>
+      <p class="small dim" style="margin-top:14px">${S.esc(S.t("zk_how"))}</p>
+      <div class="content mono small zkcmd">snarkjs groth16 verify verification_key.json public.json proof.json</div></div>`;
+  // Buttons of the proof section (call after rendering the completion screen)
+  S.bindProof = () => {
+    const dl = document.getElementById("zkDl"), ck = document.getElementById("zkCheck");
+    if (dl) dl.onclick = async () => {
+      const b = await S.api("/api/proof");
+      const vk = await (await fetch("zk/verification_key.json")).json();
+      const file = { about: "KeyProof zero-knowledge proof (Groth16, BN254). Contains no personal data.",
+        how_to_verify: "Save 'proof' as proof.json, 'publicSignals' as public.json, 'verification_key' as verification_key.json, then run: snarkjs groth16 verify verification_key.json public.json proof.json",
+        public_signals_order: "holderTag, enabled[5], issuerAx[5], issuerAy[5], adultCutoff, minIncome, allowStudent, allowEmployed, leaseEnd, minSavings, minGuarantor, today, maxAgeDays, requestId",
+        ...b, verification_key: vk };
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: "application/json" }));
+      a.download = "keyproof-proof-" + (b.code || "request") + ".json"; document.body.appendChild(a); a.click(); a.remove();
+    };
+    if (ck) ck.onclick = async () => {
+      const res = document.getElementById("zkRes"); res.innerHTML = '<span class="spinner"></span>';
+      try {
+        const b = await S.api("/api/proof");
+        const vk = await (await fetch("zk/verification_key.json")).json();
+        const ok = await snarkjs.groth16.verify(vk, b.publicSignals, b.proof);
+        res.innerHTML = `<span class="${ok ? "okText" : "badText"}">${S.icon(ok ? "check" : "x", 18)} ${S.esc(S.t(ok ? "zk_ok" : "zk_bad"))}</span>`;
+      } catch (e) { res.innerHTML = `<span class="badText">${S.esc(e.message)}</span>`; }
+    };
+  };
   window.KP = S;
 })();

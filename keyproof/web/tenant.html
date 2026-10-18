@@ -250,7 +250,7 @@ function render(force) {
   lastSig = sig;
   const finished = v === 4 && S.tenant.deposit && S.tenant.deposit.status === "settled";
   $("main").innerHTML = v === 0 ? screenWaiting() : v === 1 ? screenRequest() : v === 2 ? screenDocs() : v === 3 ? screenProof() : finished ? screenDone() : screenAfter();
-  bind(); fillHelpers();
+  bind(); fillHelpers(); KP.bindProof();
 }
 
 function labels() {
