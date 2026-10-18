@@ -109,9 +109,9 @@ function realDocs() {
   const list = S.tenant.real || [];
   if (!list.length) return "";
   return `<div class="realBox"><h2 class="withicon">${KP.icon("file")} ${t("real_title")}</h2><p class="dim small">${t("real_text")}</p>
-    ${list.map((d) => `<div class="item"><div class="icon ${d.level === "signed" ? "ok" : ""}">${KP.icon(d.level === "signed" ? "shield" : "file")}</div><div class="body">
+    ${list.map((d) => `<div class="item"><div class="icon ${d.level === "signed" ? "warn" : ""}">${KP.icon(d.level === "signed" ? "alert" : "file")}</div><div class="body">
       <div class="title">${esc(d.file)}</div>
-      <div class="small ${d.level === "signed" ? "okText" : "dim"}">${esc(d.level === "signed" ? t("real_signed", { s: d.signer }) : t("real_unsigned"))}</div>
+      <div class="small ${d.level === "signed" ? "warnText" : "dim"}">${esc(d.level === "signed" ? t("real_signed", { s: d.signer }) : t("real_unsigned"))}</div>
       ${KP.aiDocHtml(d)}</div></div>`).join("")}</div>`;
 }
 function extraDocs() {
