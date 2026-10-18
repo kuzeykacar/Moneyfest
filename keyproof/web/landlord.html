@@ -125,6 +125,14 @@ function screenStatus() {
   return reqHtml + res + share;
 }
 
+function screenDoneL() {
+  KP.steps([t("sl_desc"), t("sl_pub"), t("sl_res")], 4);
+  const d = S.landlord.deposit, r = S.request.rules;
+  const pay = S.landlord.log.find((l) => l.link && l.text.startsWith("Deposit received"));
+  return KP.doneHtml({ sub: t("done_l_sub"), amount: eur(d.amount), token: verdict && verdict.asset, txLink: pay && pay.link,
+    privateText: t("pk_l"), nextText: t("next_l"), items: KP.ticked(r).map((x) => KP.ruleText(x, r)), againLabel: t("new_req") });
+}
+
 // The landlord's own checks on what arrived in its RGB wallet (same as the developer view).
 async function verify() {
   if (verifying || !S.request || !S.tenant.approval) return;
@@ -190,6 +198,7 @@ function bind() {
     editing = false; verdict = null; refresh(true);
   });
   on("edit", () => { editing = true; draft = S.request.rules; render(true); });
+  on("again", () => { editing = true; draft = null; verdict = null; render(true); });
   on("createNew", () => { editing = true; isOwner = true; draft = null; render(true); });
   on("copyLink", () => KP.copyText(location.origin + "/a/" + S.request.code, $("copyLink")));
   on("copyPriv", () => KP.copyText(location.href, $("copyPriv")));
@@ -202,7 +211,8 @@ function render(force, keepText) {
   const sig = JSON.stringify([gate, showForm, KP.lang(), S.request && S.request.rules.requestId, S.tenant.approval, S.landlord.deposit, verdict && verdict.asset, !!draft]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
-  $("main").innerHTML = gate ? screenNotOwner() : showForm ? screenForm() : screenStatus();
+  const finished = !gate && !showForm && S.landlord.deposit && S.landlord.deposit.status === "settled" && verdict;
+  $("main").innerHTML = gate ? screenNotOwner() : showForm ? screenForm() : finished ? screenDoneL() : screenStatus();
   if (keepText !== undefined && $("text")) $("text").value = keepText;
   bind(); fillHelpers();
   if (!showForm && !gate) verify();

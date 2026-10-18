@@ -22,6 +22,12 @@
 
   const T = {
     en: {
+      completed: "Completed",
+      done_title: "All done", done_t_sub: "Your deposit has arrived. Thank you for using KeyProof.", done_l_sub: "The deposit has arrived. Thank you for using KeyProof.",
+      receipt: "Receipt", r_amount: "Deposit", r_date: "Date", r_proof: "Approval token", r_tx: "Payment",
+      private_kept: "What stayed private", pk_t: "Your name, salary, savings, address and documents never left your computer.", pk_l: "You received only a yes for each requirement – no documents, no personal details.",
+      next_title: "What happens next", next_t: "The landlord will contact you to sign the rental contract and hand over the keys.", next_l: "Contact the tenant through the platform where you met to sign the contract and hand over the keys.",
+      new_app: "Apply for another flat", new_req: "Create a new request", view_tx: "View on the Bitcoin explorer",
       problem: "Something went wrong",
       pay_low: "There is not enough money in your wallet for this deposit (you have {have}). Please add funds and try again.",
       share_title: "Share with tenants", share_text: "Send this link to people interested in your flat – for example in your Idealista listing or chat. They can also scan the QR code or type the code.",
@@ -76,6 +82,12 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      completed: "Completato",
+      done_title: "Tutto fatto", done_t_sub: "Il tuo deposito è arrivato. Grazie per aver usato KeyProof.", done_l_sub: "Il deposito è arrivato. Grazie per aver usato KeyProof.",
+      receipt: "Ricevuta", r_amount: "Deposito", r_date: "Data", r_proof: "Token di approvazione", r_tx: "Pagamento",
+      private_kept: "Cosa è rimasto privato", pk_t: "Nome, stipendio, risparmi, indirizzo e documenti non hanno mai lasciato il tuo computer.", pk_l: "Hai ricevuto solo un sì per ogni requisito – nessun documento, nessun dato personale.",
+      next_title: "Cosa succede ora", next_t: "Il proprietario ti contatterà per firmare il contratto e consegnare le chiavi.", next_l: "Contatta l'inquilino tramite la piattaforma dove vi siete trovati per firmare il contratto e consegnare le chiavi.",
+      new_app: "Candidati per un'altra casa", new_req: "Crea una nuova richiesta", view_tx: "Vedi sull'explorer Bitcoin",
       problem: "Qualcosa è andato storto",
       pay_low: "Non ci sono abbastanza fondi nel portafoglio per questo deposito (hai {have}). Aggiungi fondi e riprova.",
       share_title: "Condividi con gli inquilini", share_text: "Invia questo link alle persone interessate – ad esempio nell'annuncio o nella chat di Idealista. Possono anche scansionare il QR o digitare il codice.",
@@ -130,6 +142,12 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      completed: "Tamamlandı",
+      done_title: "Her şey tamam", done_t_sub: "Depozitonuz ulaştı. KeyProof'u kullandığınız için teşekkürler.", done_l_sub: "Depozito ulaştı. KeyProof'u kullandığınız için teşekkürler.",
+      receipt: "Makbuz", r_amount: "Depozito", r_date: "Tarih", r_proof: "Onay belirteci", r_tx: "Ödeme",
+      private_kept: "Gizli kalanlar", pk_t: "Adınız, maaşınız, birikimleriniz, adresiniz ve belgeleriniz bilgisayarınızdan hiç çıkmadı.", pk_l: "Her şart için yalnızca bir evet aldınız – belge yok, kişisel bilgi yok.",
+      next_title: "Sırada ne var", next_t: "Ev sahibi kira sözleşmesini imzalamak ve anahtarları teslim etmek için sizinle iletişime geçecek.", next_l: "Sözleşmeyi imzalamak ve anahtarları teslim etmek için kiracıyla tanıştığınız platform üzerinden iletişime geçin.",
+      new_app: "Başka bir daireye başvur", new_req: "Yeni istek oluştur", view_tx: "Bitcoin gezgininde gör",
       problem: "Bir sorun oluştu",
       pay_low: "Cüzdanınızda bu depozito için yeterli para yok (mevcut: {have}). Lütfen bakiye ekleyip tekrar deneyin.",
       share_title: "Kiracılarla paylaşın", share_text: "Bu bağlantıyı dairenizle ilgilenenlere gönderin – örneğin Idealista ilanınızda veya sohbetinde. QR kodu tarayabilir ya da kodu yazabilirler.",
@@ -218,7 +236,7 @@
     const ol = document.getElementById("progress");
     if (ol) ol.innerHTML = labels.map((l, i) => `<li class="${i + 1 < current ? "done" : i + 1 === current ? "on" : ""}"><span class="n">${i + 1 < current ? S.icon("check", 14) : i + 1}</span><span class="l">${S.esc(l)}</span></li>`).join("");
     const info = document.getElementById("stepinfo");
-    if (info) info.innerHTML = current ? S.esc(S.t("step", { a: current, b: labels.length })) + `<span class="stepname"> · ${S.esc(labels[current - 1])}</span>` : "";
+    if (info) info.innerHTML = current > labels.length ? S.esc(S.t("completed")) : current ? S.esc(S.t("step", { a: current, b: labels.length })) + `<span class="stepname"> · ${S.esc(labels[current - 1])}</span>` : "";
   };
 
   S.SLOTS = ["identity", "income", "occupation", "savings", "guarantor"];
@@ -279,5 +297,21 @@
   }
   S.alert = (text, title) => dialog(title || S.t("problem"), text, "OK", null, true);
   S.confirm = (title, text, okLabel) => dialog(title, text, okLabel || "OK", S.t("cancel"), false);
+  // Completion screen shared by tenant and landlord
+  S.doneHtml = ({ sub, amount, token, txLink, privateText, nextText, items, againLabel }) => `
+    <div class="card done"><div class="doneMark">${S.icon("check", 40)}</div>
+      <h1>${S.esc(S.t("done_title"))}</h1><p class="dim lead">${S.esc(sub)}</p>
+      ${items && items.length ? `<div class="doneChecks">${items.map((x) => `<div class="result-line"><span class="icon ok">${S.icon("check")}</span>${S.esc(x)}</div>`).join("")}</div>` : ""}
+    </div>
+    <div class="doneGrid">
+      <div class="card"><h2 class="withicon">${S.icon("file")} ${S.esc(S.t("receipt"))}</h2>
+        <dl class="receipt"><dt>${S.esc(S.t("r_amount"))}</dt><dd>${S.esc(amount)}</dd>
+        <dt>${S.esc(S.t("r_date"))}</dt><dd>${new Date().toLocaleString(S.lang(), { dateStyle: "long", timeStyle: "short" })}</dd>
+        ${token ? `<dt>${S.esc(S.t("r_proof"))}</dt><dd class="mono">${S.esc(token.slice(0, 24))}…</dd>` : ""}
+        ${txLink ? `<dt>${S.esc(S.t("r_tx"))}</dt><dd><a href="${txLink}" target="_blank" rel="noopener">${S.esc(S.t("view_tx"))} ↗</a></dd>` : ""}</dl></div>
+      <div class="card"><h2 class="withicon">${S.icon("lock")} ${S.esc(S.t("private_kept"))}</h2><p class="dim">${S.esc(privateText)}</p>
+        <h2 class="withicon" style="margin-top:18px">${S.icon("home")} ${S.esc(S.t("next_title"))}</h2><p class="dim">${S.esc(nextText)}</p>
+        <button class="btn secondary" id="again" style="margin-top:8px">${S.esc(againLabel)}</button></div>
+    </div>`;
   window.KP = S;
 })();

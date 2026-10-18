@@ -115,6 +115,14 @@ function screenProof() {
   return `<div class="card"><h1>${t("t3_title")}</h1><p class="dim">${t("t3_text")}</p>${inner}</div>`;
 }
 
+function screenDone() {
+  KP.steps([t("st_req"), t("st_docs"), t("st_proof"), t("st_dep")], 5);
+  const dep = S.tenant.deposit, r = S.request.rules;
+  const pay = S.tenant.log.find((l) => l.link && l.text.startsWith("Paid the deposit"));
+  return KP.doneHtml({ sub: t("done_t_sub"), amount: eur(dep.amount), token: S.tenant.approval.asset_id, txLink: pay && pay.link,
+    privateText: t("pk_t"), nextText: t("next_t"), items: KP.ticked(r).map((x) => KP.ruleText(x, r)), againLabel: t("new_app") });
+}
+
 function screenAfter() {
   setProgress(4, 4);
   const ap = S.tenant.approval, pp = S.tenant.pending_payment, dep = S.tenant.deposit;
@@ -171,6 +179,7 @@ async function makeProof() {
 function bind() {
   const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
   on("next1", () => { view = 2; render(true); });
+  on("again", () => { location.href = "/tenant.html"; });
   const go = () => { code = KP.normCode($("codeIn").value); history.replaceState(null, "", "/tenant.html?c=" + code); render(true); };
   on("openCode", go);
   if ($("codeIn")) $("codeIn").onkeydown = (e) => { if (e.key === "Enter") go(); };
@@ -239,7 +248,8 @@ function render(force) {
     S.issuer && S.issuer.status]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
-  $("main").innerHTML = v === 0 ? screenWaiting() : v === 1 ? screenRequest() : v === 2 ? screenDocs() : v === 3 ? screenProof() : screenAfter();
+  const finished = v === 4 && S.tenant.deposit && S.tenant.deposit.status === "settled";
+  $("main").innerHTML = v === 0 ? screenWaiting() : v === 1 ? screenRequest() : v === 2 ? screenDocs() : v === 3 ? screenProof() : finished ? screenDone() : screenAfter();
   bind(); fillHelpers();
 }
 
