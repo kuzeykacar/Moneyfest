@@ -1,255 +1,343 @@
-# 🔑 KeyProof
+# KeyProof
 
-**Prove you qualify for a flat without showing your documents.**
+**Prove you qualify for a flat without handing over your documents.**
 
 Team **Moneyfest** · *Agentic Dollars on Bitcoin* hackathon · BLOX Turin, 17–18 October 2026
-Built with **RGB** (required), **QVAC** (required), zero-knowledge proofs (circom + Groth16).
 
-> ✅ **Tested end to end on Bitcoin (Mutinynet) on Sunday 18 Oct at 00:46–00:49:** a real RGB approval token
-> and a real RGB stablecoin deposit, both settled on-chain. Links in [Proof it works](#proof-it-works).
+**Built with:** RGB on Bitcoin (approval token + stablecoin deposit) · QVAC local AI (landlord form + reading the tenant's documents on-device) · Tether WDK (tenant's self-custodial wallet) · zero-knowledge proofs (circom + Groth16) · digitally signed PDFs.
+
+> **The AI helps, the math decides.** Every ✓ a landlord sees is proven from data a trusted issuer signed. The landlord never sees a document, a name or an amount.
 
 ---
 
-## The problem
+## Contents
 
-To rent a room, a tenant sends a stranger their **full bank statements, ID card, payslips and contracts**,
-often by email or WhatsApp. The landlord only needs a few answers: *Is this person an adult? Do they earn
-enough? Are they a student or employed? Is there a guarantor?*
+1. [The problem](#1-the-problem)
+2. [What KeyProof does](#2-what-keyproof-does)
+3. [How it works, step by step](#3-how-it-works-step-by-step)
+4. [Technologies and how we use them](#4-technologies-and-how-we-use-them) – RGB · QVAC · Tether WDK · ZK proof · signatures
+5. [Hackathon requirements and judging points](#5-hackathon-requirements-and-judging-points)
+6. [Security: what can and can't be faked](#6-security-what-can-and-cant-be-faked)
+7. [We tested real documents](#7-we-tested-real-documents)
+8. [Proof it works: transactions and tests](#8-proof-it-works-transactions-and-tests)
+9. [Try it yourself](#9-try-it-yourself) – quick demo · full setup (AI, real RGB, WDK) · phones · verify a proof
+10. [Demo files](#10-demo-files)
+11. [What's real today, what's next](#11-whats-real-today-whats-next)
+12. [Repository map](#12-repository-map)
+13. [Open-source projects we build on](#13-open-source-projects-we-build-on)
+14. [How we got here](#14-how-we-got-here) · [Security note](#security-note) · [Team](#team)
 
-Everything else in those documents (exact salary, account balance, spending history, address, ID number) is
-exposed for nothing, and the files stay in someone's inbox forever. Meanwhile, edited PDFs are easy to make,
-so landlords can't fully trust what they receive either.
+---
 
-**Both sides lose:** tenants give away too much, landlords still can't be sure.
+## 1. The problem
 
-## The solution
+To rent a room, tenants send strangers their **ID card, payslips, bank statements and contracts**, usually by email or WhatsApp. The landlord only needs a few yes/no answers: *adult? earns enough? student or employed until the lease ends? guarantor?*
 
-KeyProof lets the tenant **prove the answers** instead of sending the documents:
+- **Tenants overshare:** exact salary, balance, spending history, address and ID number end up in strangers' inboxes forever.
+- **Landlords still can't trust it:** a PDF can be edited in 30 seconds. We checked 6 real documents from 5 institutions; **none** was digitally signed (see [section 7](#7-we-tested-real-documents)).
 
-1. **The issuer signs.** The bank, the city office (comune) or the university issues a **digitally signed PDF**.
-   Inside it is a small **data card** (e.g. `income = 1650`), also signed by the issuer.
-2. **The landlord asks.** They type what they need ("adult student, earns at least €1,500 a month"). A **local AI
-   (QVAC)** turns the sentence into checkboxes. The landlord checks them and publishes the request.
-3. **The tenant proves.** On the tenant's own laptop, KeyProof checks every PDF signature, then creates a
-   **zero-knowledge proof**: *"documents signed by trusted issuers say this person passes every ticked check."*
-   The proof contains **no name, no amounts, no documents**.
-4. **RGB carries the approval.** The proof is attached to a unique **RGB token on Bitcoin** and sent on-chain to
-   the landlord's wallet. Only a hash of the proof is committed on-chain; nothing private goes on the blockchain.
-5. **The landlord verifies.** The landlord's wallet validates the RGB token; the landlord's page checks the proof
-   against **its own rules** and **its own list of trusted issuers**. Result: ✓ / ✗ per check, nothing more.
-6. **Agentic dollars.** After a valid approval, the landlord's agent requests the deposit; the tenant's agent
-   prepares it; the tenant presses **Confirm**; the deposit moves as an **RGB stablecoin** on Bitcoin.
+## 2. What KeyProof does
+
+| Who | Does | Sees |
+|---|---|---|
+| **Landlord** | Writes what they need in plain words; the local AI fills the form; adds the flat; publishes a code, link and QR | Only ✓/✗ per requirement, plus the deposit |
+| **Tenant** | Opens the link (laptop or phone), drops signed PDFs; the local AI reads them **on their device**; creates a zero-knowledge proof; sends it as an RGB token; pays the deposit | Everything about their own documents, nothing leaves the device |
+| **Issuer** (bank, comune, university, employer) | Signs documents and a small data card inside them | – |
+| **Anyone** (notary, bank, jury) | Drops the downloaded proof file into the standalone verifier | ✓ Valid / ✗ NOT valid and what was proven |
+
+**Requirements a landlord can set:** adult (18+) · sex (for rooms in a shared flat only) · monthly income ≥ X · student and/or employed until the lease ends · savings ≥ X · guarantor's income ≥ X. Documents with money must be less than 90 days old, and all documents must belong to the same person.
+
+## 3. How it works, step by step
+
+```
+ Issuer (bank, comune, university)   signs the PDF + a data card inside it (EdDSA-Poseidon, ZK-friendly)
+        │
+ Landlord's laptop                   1. writes requirements → QVAC local AI fills the form → landlord checks → publish
+        │                               (code + link + QR for the listing)
+        ▼
+ Tenant's laptop / phone             2. drops PDFs → signature check (not changed, trusted issuer, valid, right issuer)
+                                     3. QVAC reads each document ON THE DEVICE: sorts it, reads values, private advice
+                                     4. browser builds a zero-knowledge proof: "every rule is met, using data
+                                        signed by these issuers" – no name, no amounts, no documents
+                                     5. proof attached to an RGB approval token → sent on Bitcoin to the landlord
+        │
+ Landlord's laptop                   6. RGB wallet receives + validates the token
+                                     7. browser verifies the proof against ITS OWN rules and ITS OWN trust list
+                                     8. ✓ / ✗ per requirement → assistant asks for the deposit
+        │
+ Tenant                              9. confirms → deposit in a stablecoin on RGB (tenant wallet on Tether WDK)
+ Both                               10. completion screen, printable receipt, downloadable proof anyone can re-check
+```
 
 ### Who decides what
 
 | Part | Job | Decides? |
 |---|---|---|
-| Issuer's digital signature | the data is real and unchanged | yes |
-| Zero-knowledge proof | the data passes the landlord's rules, without revealing it | yes |
-| RGB token on Bitcoin | who owns the approval; single use; timestamp; carries the deposit | yes |
-| Local AI (QVAC, Qwen3.5 4B) | understands the landlord's text, fills the form | **never** |
-| Humans | landlord publishes the rules; tenant confirms sending and paying | yes |
+| Issuer's digital signature | The data is real and unchanged | ✓ |
+| Trust list | Which issuers count, and for which facts | ✓ |
+| Zero-knowledge proof | The data meets the landlord's rules, without revealing it | ✓ |
+| RGB on Bitcoin | Who owns the approval, timestamp, carries the deposit | ✓ |
+| Local AI (QVAC) | Fills the landlord's form; reads, sorts and explains the tenant's documents | **Never** |
+| People | The landlord publishes the rules; the tenant confirms sending and paying | ✓ |
 
-Rule we kept from the start: **the AI understands, code and math decide, humans confirm.**
+## 4. Technologies and how we use them
 
-## The 5 checks a landlord can tick
+### RGB on Bitcoin (required)
+- **Approval token:** an RGB **UDA** (unique digital asset) issued by the tenant's wallet; its media is the ZK proof, so the RGB contract commits to the proof's hash. Sent **on-chain** to the landlord.
+- **Why RGB:** the approval has one owner, can't be duplicated or quietly sent to many landlords, has a Bitcoin timestamp, and is validated client-side by the receiver. Nothing private is published on the chain.
+- **Deposit:** an RGB **NIA** stablecoin (`TUSDT`, our test token) from tenant to landlord after approval, the "agentic dollars" part: the landlord's assistant requests it, the tenant confirms.
+- **Credentials as RGB tokens** ("coming next" mode, `/issuer.html`): issuers can send signed data cards straight into the tenant's RGB wallet, so no PDF is needed.
+- **Stack:** `rgb-lib` 0.3.0b7 (Python), **Mutinynet** (Bitcoin signet, ~30 s blocks), KaleidoSwap's Mutinynet indexer `esplora.signet.kaleidoswap.com` and RGB proxy `proxy.kaleidoswap.com`. No Docker.
 
-| Check | Signed source (real world) | What the landlord learns |
-|---|---|---|
-| **Identity, 18+** | ID office / municipality | adult ✓; all documents belong to the same person |
-| **Monthly income ≥ X** | bank statement / payslip | income ≥ X ✓ (never the amount) |
-| **Occupation** | university or employer | student / employed ✓, lasting until the lease ends |
-| **Savings ≥ X** | bank balance certificate | savings ≥ X ✓ |
-| **Guarantor's income ≥ X** | guarantor's bank | guarantor ✓ |
+### QVAC local AI (required)
+Runs **Qwen3.5 4B** (Q4_K_M) locally through `@qvac/cli` (OpenAI-compatible API on `127.0.0.1:11436`), offline. Qwen3 1.7B is the backup and keyword rules are the last fallback, so the demo never breaks.
+- **Landlord:** turns "adult female student, earns 1,500" (English, Italian, Turkish) into the requirement form. Benchmark (`keyproof/tools/bench_ai.py`): **4B 10/10 correct, ~3.3 s**; 1.7B 8/10, ~1.2 s.
+- **Tenant, where local matters most:** reads each uploaded PDF **on the tenant's device** (`keyproof/keyproof/pdftext.py` + `ai.read_document`): document type, issuer, name, amount, dates, sex, reference. It routes the document and gives private advice ("€1,650 meets €1,500 ✓", "issued 6 days ago ✓", "name differs from your ID", "not related to this request"). Tested on 6 sample documents and **real** Agenzia delle Entrate, UniCredit, Politecnico and e-Devlet PDFs: all read correctly in ~4–7.5 s each.
+- **Why it must be local:** it reads the most private data in the whole flow. A cloud AI means uploading ID and bank statements.
+- **What it never does:** decide. Its output is advice only; approval comes from signatures and the ZK proof.
 
-**Only digitally signed documents are accepted.** No valid signature, no approval. We don't guess whether a PDF
-"looks real" (no Photoshop/metadata checks). We left criminal records out on purpose: in the EU that data is
-specially protected (GDPR Art. 10) and landlords generally may not ask for it.
-
-## How each technology is used
-
-### RGB (required)
-- **Approval token:** an RGB **UDA** (unique digital asset) issued by the tenant's wallet. Its media file is the
-  proof, so the RGB contract commits to the proof's hash. Sent **on-chain** (not Lightning) to the landlord.
-- **Why RGB:** the approval is *owned* by one wallet, can't be duplicated or quietly sent to many landlords, has a
-  Bitcoin timestamp, and is validated client-side by the receiver. Nothing private is published.
-- **Deposit:** an RGB **NIA** stablecoin (`TUSDT`, our test token) moved tenant → landlord after approval.
-- **Stack:** `rgb-lib` 0.3.0b7 Python bindings, Bitcoin **Mutinynet** (signet, ~30 s blocks), KaleidoSwap's
-  Mutinynet indexer (`esplora.signet.kaleidoswap.com`) and RGB proxy (`proxy.kaleidoswap.com`). No Docker.
-
-### QVAC (required)
-- **Qwen3.5 4B (Q4_K_M)** served locally by `@qvac/cli` (OpenAI-compatible API on `127.0.0.1:11436`), offline;
-  Qwen3 1.7B as a backup. Thinking mode off (`reasoning_budget: 0`) so it answers directly.
-- Turns the landlord's free text (English, Italian, Turkish) into the 5 checkboxes and numbers.
-- Benchmark on 10 landlord sentences (`keyproof/tools/bench_ai.py`): **Qwen3.5 4B 10/10 correct, ~3.3 s**;
-  Qwen3 1.7B 8/10, ~1.2 s.
-- Code validates the output (booleans, whole euros, real dates) and the landlord confirms the boxes.
-  If QVAC is off, keyword rules take over so the demo never breaks.
+### Tether WDK
+- The tenant gets a **self-custodial wallet built on WDK's RGB module** [`@utexo/wdk-wallet-rgb`](https://www.npmjs.com/package/@utexo/wdk-wallet-rgb) 2.0.3 (a community module listed in the WDK docs). Keys stay on the device (`keyproof/data/wdk/`, never committed).
+- `keyproof/wdk/server.mjs` is a small local service (127.0.0.1:8011) that the app calls. The tenant screens show the wallet's address, live balance from the Bitcoin test network, and a QR to fund it.
+- `keyproof/scripts/wdk_check.command` installs WDK and checks it on our network: it connected on **signet** with our KaleidoSwap indexer.
+- **Next step:** move the RGB deposit itself into the WDK wallet. WDK supports standard signet, while our rgb-lib wallets use Mutinynet as a *custom* signet, so the two must be aligned first.
 
 ### Zero-knowledge proof
-- **Circuit** (`keyproof/circuits/keyproof.circom`, ~45,000 constraints): for each ticked check it verifies the
-  issuer's **EdDSA-Poseidon** signature on the data card, that the document is the right kind, that all documents
-  belong to the same person, and the rule itself (age, income, status and end date, savings, guarantor, and that
-  money documents are less than 90 days old).
-- **Groth16** with snarkjs: the proof is made **in the tenant's browser** (~8 s, 0.7 KB) and checked **in the
-  landlord's browser** (milliseconds).
-- **Public inputs** are the landlord's own rules, request number and the issuer keys used; the landlord rejects
-  any proof made with easier rules, another request, or an issuer it doesn't trust.
-- **Output:** a tag that is the same for the same tenant on the same request, and different across landlords,
-  so landlords can't link a tenant between them.
+- **Circuit** `keyproof/circuits/keyproof.circom` (~45,500 constraints, circom 2.2.2). For each ticked requirement it verifies the issuer's **EdDSA-Poseidon** signature on the data card, the document type, that all documents belong to the same person, and the rule itself: age, **sex** (from the signed identity card / codice fiscale), income, student or employed until the lease ends, savings, guarantor, and freshness of money documents.
+- **Groth16** with snarkjs: the proof is made **in the tenant's browser** (~10 s, 0.7 KB) and checked **in the landlord's browser** (milliseconds).
+- **27 public values:** the landlord's own rules, the request number and the issuer keys used. The landlord rejects proofs made with easier rules, another request, or an untrusted issuer.
+- **Unlinkable:** the output tag is the same for the same tenant on the same request, and different across landlords.
+- **Verifiable by anyone:** the completion screen offers **Download proof** (proof, public values, rules, verification key, Bitcoin transaction links). The **standalone verifier** (`/verify.html`, or `keyproof/docs/keyproof-verifier.html` opened anywhere) checks it against KeyProof's **built-in** official key and trust list, so a file can't vouch for itself. One edited number in the file → "NOT valid".
+- Trusted setup: powers of tau 2^16 plus a circuit-specific phase, run by our team (`keyproof/tools/setup_zk.cjs`). Production needs a multi-party ceremony.
 
-### Digital signatures on the PDFs
-- Each demo PDF carries a CMS signature (`adbe.pkcs7.detached`, ECDSA P-256) covering every byte. Any PDF tool can
-  check it: poppler's `pdfsig` reports **"Signature is Valid"** on our documents.
-- KeyProof's 4 checks: **not changed**, **trusted issuer** (certificate issued by the trusted root), **still valid**
-  (dates, not revoked), **right issuer** (a university can't vouch for income).
-- Each issuer certificate also carries the issuer's ZK key, so the landlord only needs to trust one root.
+### Digitally signed PDFs
+- CMS signatures (`adbe.pkcs7.detached`) over every byte, readable by any PDF tool: poppler's `pdfsig` and Adobe Acrobat report "Signature is Valid".
+- `keyproof/keyproof/pdfsig.py` runs **4 checks**: **not changed** · **trusted issuer** (certificate from the trusted root) · **still valid** (dates, not revoked) · **right issuer** (a university can't vouch for income). It handles ECDSA and **RSA** (SHA-256/384/512), the signature types real issuers use.
+- **Three levels shown to the tenant:**
+  - green: a trusted issuer, used for the proof;
+  - amber: a valid signature from a key that is **not** on the trust list ("a key that *calls itself* X"); never used for the proof;
+  - grey: unsigned; the AI reads it, but it never counts.
 
-## Proof it works
+## 5. Hackathon requirements and judging points
+
+| Point | Where in KeyProof |
+|---|---|
+| **RGB (required)** | Approval token (UDA carrying the ZK proof) and stablecoin deposit (NIA), both **settled on Bitcoin Mutinynet**; issuer credentials as RGB tokens; wallet page with balances and transactions ([section 8](#8-proof-it-works-transactions-and-tests)) |
+| **QVAC (required)** | Local Qwen3.5 4B on both sides: the landlord form from free text (EN/IT/TR), and reading the tenant's private documents **on the device**; benchmarked; with fallbacks |
+| **Tether WDK (bonus)** | The tenant's self-custodial wallet built on `@utexo/wdk-wallet-rgb`, live on the test network inside the app |
+| **Agentic dollars** | The landlord's assistant requests the deposit after a valid proof; the tenant confirms; a stablecoin moves on RGB. No human handles documents, the AI never decides money or approval |
+| **Privacy** | Documents never leave the tenant's device; the landlord learns only ✓/✗; the ZK proof hides all values; nothing private on-chain; the proof tag is unlinkable across landlords |
+| **Security** | Issuer signatures + trust list + "right issuer" + ZK checked on the landlord's own machine; edited, self-signed and forged-name documents all fail ([section 6](#6-security-what-can-and-cant-be-faked)) |
+| **Real-world fit** | Real Italian and Turkish documents tested; listing, QR for Idealista, receipts, EN/IT/TR, phones on the same Wi-Fi |
+| **Completeness** | Full flow works end to end, real transactions, downloadable proof, standalone verifier, admin page, restart script |
+| **Honesty** | A clear "real today / next" list ([section 11](#11-whats-real-today-whats-next)); demo issuers labelled "(test)" |
+
+## 6. Security: what can and can't be faked
+
+| Attempt | Result |
+|---|---|
+| Edit a number in a signed PDF | ❌ signature breaks ("modified after it was signed"); the proof can't be built from it |
+| Sign a document yourself, even with true data | ❌ your key isn't on the landlord's trust list |
+| Sign with a key named "Moneyfest Bank (test)" | ❌ shown as "a key that *calls itself*…"; not trusted |
+| A university signing an income statement | ❌ "right issuer" check |
+| Use someone else's documents | ❌ all documents must be the same person; the proof is tied to one request |
+| Prove against easier rules (e.g. €100 instead of €1,500) | ❌ the landlord verifies with their own rules; the standalone verifier says NOT valid |
+| Skip the identity card to dodge a sex requirement | ❌ the circuit forces the signed identity card on when sex is required |
+| Hack the local AI or the tenant's app | ❌ only fools their own screen; the landlord verifies independently |
+| A dishonest or hacked **trusted issuer** | ⚠️ the math faithfully proves what the issuer signed; the fix is revoking that issuer on the trust list |
+
+## 7. We tested real documents
+
+Not one of these real documents carried a digital signature inside the PDF. Each uses a different method instead:
+
+| Document | Issuer | Signed? | How it's verified instead | Local AI read it |
+|---|---|---|---|---|
+| Bank account statement | UniCredit | No | – | ✓ savings, €482 |
+| Lease-registration receipt (RLI12) | Agenzia delle Entrate | No | protocol number | ✓ rental, €13,200/yr |
+| Enrolment certificate | Politecnico di Torino | No ("firma omessa", D.Lgs. 39/1993) | verify link on polito.it | ✓ |
+| Self-declaration | Politecnico di Torino | No | – | ✓ |
+| Address document | Turkish e-Devlet (NVİ) | No | barcode on turkiye.gov.tr | ✓ |
+| Gas bill | utility (Doxee platform) | No | – (the signed version is the XML e-invoice) | ✓ |
+
+The real documents stay on our machine; they are **not** in this repo.
+
+**Conclusion:** today a landlord can't check any of these at scale. KeyProof only approves what's mathematically provable. Next: **zkTLS** to prove facts straight from issuer websites (home banking, e-Devlet, university portals), still privately.
+
+## 8. Proof it works: transactions and tests
 
 ### Real Bitcoin transactions (Mutinynet test network)
 
 | Step | Transaction |
 |---|---|
-| Test bitcoin from the faucet to our issuer wallet (100,000 sats) | [3243ddff…](https://mutinynet.com/tx/3243ddffd988652ca382ccd073bc33349468d0b382926b305f962b56825c7cf0) |
+| Test bitcoin from the faucet to our issuer wallet | [3243ddff…](https://mutinynet.com/tx/3243ddffd988652ca382ccd073bc33349468d0b382926b305f962b56825c7cf0) |
 | Bitcoin shared with the landlord wallet | [87f3ce7a…](https://mutinynet.com/tx/87f3ce7af2fc8dde3d9b446ec3f8811f7f3de9d6e98c1d72a0bf42dd4fedb6ff) |
 | 2,000 TUSDT (RGB stablecoin) to the tenant | [a255bf90…](https://mutinynet.com/tx/a255bf90c14c688ae80d1fa37e9e6bdd35109d49a3a3188629036778a22514a5) |
-| **3 credentials (identity, income, enrolment) as RGB tokens, issuers → tenant, one transaction** | [fa94519c…](https://mutinynet.com/tx/fa94519c3b22f806f26c751851ccf4eb1b093a5817d26ba79bfb50f29e1616a5) |
-| **Approval token (RGB UDA with the ZK proof) tenant → landlord** | [01bc272e…](https://mutinynet.com/tx/01bc272eb2a29629ac95907cca4377dcdf17f83af8d793ecd02324b69daa6655) |
-| **Deposit, 1,100 TUSDT, tenant → landlord** | [899d3dc8…](https://mutinynet.com/tx/899d3dc81d352a13112b651381921eeb1b1f4fb7f9d3210bcf1811b8b66e83ba) |
+| 3 credentials as RGB tokens, issuers → tenant, one transaction | [fa94519c…](https://mutinynet.com/tx/fa94519c3b22f806f26c751851ccf4eb1b093a5817d26ba79bfb50f29e1616a5) |
+| **Approval token (RGB UDA with the ZK proof), tenant → landlord** | [01bc272e…](https://mutinynet.com/tx/01bc272eb2a29629ac95907cca4377dcdf17f83af8d793ecd02324b69daa6655) |
+| **Deposit 1,100 TUSDT, tenant → landlord** | [899d3dc8…](https://mutinynet.com/tx/899d3dc81d352a13112b651381921eeb1b1f4fb7f9d3210bcf1811b8b66e83ba) |
 
-RGB assets: approval token `rgb:3X~uMZFM-gJZqkCl-asrjSVA-NKuExMW-6hPwmzp-IxFez9Q`,
-stablecoin `rgb:j7daBWV1-qd2YN6B-QD_84b5-4qqRuGj-lUCwT8y-ictiTwY` (TUSDT).
-After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so far: about 3,000 test sats.
+Stablecoin asset: `rgb:j7daBWV1-qd2YN6B-QD_84b5-4qqRuGj-lUCwT8y-ictiTwY` (TUSDT). Later runs during the demo add more approval and deposit transactions; each one is linked from the app's receipt.
 
 ### Tests we ran
 
 | Test | Result |
 |---|---|
-| Edited PDF (one number changed, €1,650 → €2,650) | ❌ rejected: "modified after it was signed" |
-| PDF from a "bank" certified by an untrusted authority | ❌ rejected: not a trusted issuer |
-| University trying to sign an income statement | ❌ rejected: wrong issuer for this document |
-| Content appended after signing | ❌ rejected |
-| Real signed documents | ✅ all 4 checks pass |
-| Circuit: income below the minimum / enrolment ending before the lease / wrong status | ❌ no proof possible |
-| Circuit: card value edited after the issuer signed it | ❌ no proof possible |
-| Landlord changes the minimum to an easier number in a valid proof | ❌ verification fails |
-| Full flow in the browser, simulated RGB | ✅ |
-| **Full flow on Bitcoin Mutinynet with real RGB** | ✅ approval token and deposit settled |
+| 6 signed documents (identity + codice fiscale, income, enrolment, employment, balance, guarantor) | ✅ all 4 checks pass; `pdfsig`: "Signature is Valid" |
+| The 6 `_EDITED` copies (one value changed each) | ❌ rejected |
+| Documents signed by a stranger's key / a fake "bank" key | ⚠️ valid signature, not trusted, never used for the proof |
+| Circuit: income below the minimum, enrolment ends before the lease, wrong status, wrong sex | ❌ no proof possible |
+| "Women only" with Elena (F) / "Men only" | ✅ proof / ❌ no proof |
+| Downloaded proof in the standalone verifier / same file with the minimum edited | ✅ valid / ❌ NOT valid |
+| Local AI (QVAC, Qwen3.5 4B) on 6 sample + 4 real documents | ✅ all classified correctly, ~4–7.5 s each |
+| Full browser flow: landlord → tenant → proof → RGB → deposit → receipt (desktop + phone width) | ✅ (`keyproof/tools/e2e_real.cjs`) |
+| Full flow on Bitcoin Mutinynet with real RGB | ✅ approval token and deposit settled |
 
-## Status
+## 9. Try it yourself
 
-| Part | Status |
+Requirements: a **Mac with Apple Silicon** and Python 3.10+. Everything installs **into the project folder**: no admin rights, no Docker. On a Mac, run the `.command` files by double-clicking them in Finder (first time: right-click → Open if macOS asks).
+
+### A. Quick demo (5 minutes, no Bitcoin, no AI download)
+1. `git clone https://github.com/kuzeykacar/Moneyfest.git`, or **Code → Download ZIP**.
+2. Double-click `keyproof/scripts/setup_mac.command` (once: creates `.venv` with `cryptography` + `rgb-lib`).
+3. Double-click `keyproof/scripts/run_demo.command` and keep the window open.
+4. Open **http://127.0.0.1:8010** → **Create a tenant check** → publish → open the tenant link → drag PDFs from `keyproof/demo_docs/`.
+
+Without the AI running, documents are read with simple rules instead, and the screen says so. RGB is simulated.
+
+### B. Full setup, as we run it (local AI + real RGB + WDK)
+1. **Local AI (QVAC):**
+   - Double-click `scripts/setup_ai.command` once. It installs Node.js and QVAC into `.node/` and `.qvac/`.
+   - Then double-click `keyproof/scripts/start_ai_4b.command` and keep it open. The first run downloads Qwen3.5 4B (~2.7 GB, checked by SHA-256).
+   - Optional: `keyproof/scripts/test_ai_docs.command` makes the AI read every sample document and writes `keyproof/data/ai-docs.txt`.
+2. **Tether WDK:** double-click `keyproof/scripts/wdk_check.command` once. It installs WDK and creates the tenant's WDK wallet (seed in `keyproof/data/wdk/`, never committed).
+3. **Real RGB wallets on Mutinynet:**
+   - Run `keyproof/scripts/run_real.command` once. It creates the issuer, tenant and landlord wallets in `keyproof/data/wallets/` (never committed).
+   - Open **http://127.0.0.1:8010/wallets.html**, copy the **issuer** address, and get test coins at https://faucet.mutinynet.com.
+   - On the wallet page (every spend shows its cost and needs **Confirm**), or with `keyproof/scripts/rgb_setup.command`:
+     1. share sats with the tenant and landlord;
+     2. create RGB slots;
+     3. issue the TUSDT stablecoin;
+     4. send TUSDT to the tenant.
+4. **Run:** `keyproof/scripts/run_real.command` starts KeyProof with real RGB, the local AI (if running) and the WDK wallet service. If anything ever hangs, `keyproof/scripts/restart_app.command` stops and restarts it.
+
+### C. Phones
+- The QR and link use the Mac's **Wi-Fi** address. Phones on the same Wi-Fi open the **tenant** side; landlord, wallets and admin only work on the Mac.
+- Guest Wi-Fi networks often block devices from reaching each other. In that case, turn on a phone's **Personal Hotspot**, connect the Mac to it, and run `restart_app.command`.
+
+### D. Verify a proof anywhere
+1. On the completion screen, click **Download proof**.
+2. Open **`/verify.html`** (or the single file `keyproof/docs/keyproof-verifier.html` on any computer) and drop the JSON.
+3. Developers can also check it with the open-source CLI: `snarkjs groth16 verify verification_key.json public.json proof.json`.
+
+### Useful pages
+| Page | What |
 |---|---|
-| Signed demo documents (5 + 1 fake) | ✅ |
-| Signature checks | ✅ |
-| ZK circuit, trusted setup, browser proving and verifying | ✅ |
-| Local AI (QVAC, Qwen3.5 4B) filling the landlord form | ✅ 10/10 on our benchmark (keyword backup) |
-| Simple screens for tenant and landlord (one step at a time, big buttons, plain words, EN/IT/TR) | ✅ |
-| **Credentials as RGB tokens** ("future" mode): issuers send signed data cards straight to the tenant's RGB wallet in one transaction; the tenant checks them (issuer seal, trusted issuer, valid, right issuer) and uses them instead of PDFs | ✅ (`/issuer.html`) |
-| Local AI assistant texts: explains requests, rejections, results and the deposit in the user's language | ✅ |
-| Wallet page: balances, assets, transactions, every spend needs Confirm | ✅ |
-| Completion screen with receipt; **downloadable ZK proof** (proof + public values + verification key + tx links) that any third party can verify with `snarkjs groth16 verify`, plus a re-check button | ✅ |
-| Landlord ↔ tenant connection: application code + link + QR to share (e.g. on Idealista), private landlord dashboard link; the proof is bound to that request | ✅ |
-| Real RGB approval token + deposit on Mutinynet | ✅ |
-| Product screens: landing page, landlord adds the flat (address, type, move-in, rent, deposit), tenant sees a listing card first | ✅ |
-| Tenant drags all signed PDFs into one box; they are checked and sorted automatically (by the issuer-signed type in the data card) | ✅ |
-| Official-style signed PDFs (letterhead, protocol number, visible signature panel, still marked TEST ISSUER) | ✅ |
-| Phones on the same Wi-Fi open the tenant link / QR; landlord, wallets and admin stay on the host computer (`/admin.html`) | ✅ |
-| Printable receipt (`/receipt.html`): flat, requirements met, deposit, Bitcoin tx links, approval token, proof fingerprint | ✅ |
-| **Local AI on the tenant side (QVAC):** reads each uploaded PDF on the tenant's own device – what it is, issuer, name, amount, dates – and gives a private pre-check with advice (amount vs the landlord's minimum, age, document age, name matches the ID, enrolment lasts until the lease ends, AI label vs issuer-signed label). Advice only: the landlord relies on the signatures and the ZK proof. Test: `keyproof/scripts/test_ai_docs.command` | ✅ |
-| **Real official PDFs:** signature check now handles real issuers' RSA / SHA-2 signatures. Real documents from issuers not on the trust list (or unsigned, like Agenzia delle Entrate Entratel receipts) are accepted as "real documents": integrity shown, read by the local AI on the device, never used for the proof. Tested on a real Agenzia delle Entrate lease-registration receipt and a real UniCredit account statement (both read correctly in ~7.5 s). None of 5 real documents from 4 institutions (UniCredit, Agenzia delle Entrate, Politecnico di Torino, Turkish e-Devlet) carried a PDF signature. | ✅ |
-| **Standalone verifier:** `/verify.html` in the app and `keyproof/docs/keyproof-verifier.html` (one file, open anywhere): drop the downloaded proof JSON → checks the proof with KeyProof's official verification key and trusted-issuer list built into the page (the file can't vouch for itself), that it matches the rules, and shows what was proven. Edited rules → "NOT valid" | ✅ |
-| **Untrusted-signer demo files:** `keyproof/real_docs/2_Income_statement_SIGNED_BY_STRANGER.pdf` (a private person's key) and `…_FAKE_BANK_KEY.pdf` (a key that *calls itself* Moneyfest Bank) – valid signatures, shown in amber, never used for the proof | ✅ |
-| **Tether WDK:** the tenant gets a self-custodial wallet built on WDK's RGB module (`@utexo/wdk-wallet-rgb`), keys on the device; address, live balance and a funding QR on the tenant screens (`keyproof/wdk/`, installed by `scripts/wdk_check.command`, started by `run_real`). Next: move the RGB deposit itself into the WDK wallet (WDK supports standard signet; our wallets use Mutinynet as a custom signet) | ✅ |
-| **Sex requirement** (e.g. a room for women only): read from the issuer-signed identity card (codice fiscale), proven inside the ZK circuit – the landlord learns only ✓. New public input `requiredSex`, new trusted setup | ✅ |
-| **Signed documents for every type** (identity + codice fiscale, income with salary credits, enrolment, employment, balance, guarantor), issued by the Moneyfest test issuers, each with an `_EDITED` copy that is rejected (`keyproof/demo_docs/`) | ✅ |
-| **A real signed document with a real origin:** `keyproof/real_docs/Team_Moneyfest_membership.pdf`, written and signed (RSA 2048) by Team Moneyfest itself; Acrobat / poppler report "Signature is Valid"; the `_EDITED` copy (one name changed) is rejected | ✅ |
-| Pitch script and jury Q&A | ✅ [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md) |
+| `/` | Home: landlords create a tenant check, tenants enter a code |
+| `/landlord.html` | Landlord: requirements (with the local AI), the flat, publish, share, result, deposit |
+| `/a/CODE` | Tenant link for an application |
+| `/receipt.html` | Printable receipt |
+| `/verify.html` | Standalone proof verifier |
+| `/admin.html` (host only) | Wallets, issuer, developer view, start over, presenter mode |
+| `/wallets.html` (host only) | RGB wallets: balances, assets, transactions, actions with confirmation |
+| `/issuer.html` (host only) | Issuers send credentials as RGB tokens |
+| `/dev.html` (host only) | Developer view: both sides on one page |
 
-## What is real and what is demo
-
-**Real:** the PDF signatures and their checks; the EdDSA-Poseidon signatures on the data cards; the circom circuit
-and Groth16 proofs; the RGB token and stablecoin transfers on Bitcoin Mutinynet; the local AI.
-
-**Demo:**
-- The issuers (Moneyfest Bank, Moneyfest Anagrafe, Moneyfest University, Moneyfest Employer – all marked "(test)") and the trust root
-  are ours. The people (Elena Rossi, Marco Rossi) are fictional.
-- `TUSDT` is our own test stablecoin on Mutinynet (no value).
-- The ZK trusted setup was a single-team ceremony (fine for a demo, not for production).
-- In the demo one server plays both laptops, but the landlord side only uses what arrives in its own RGB wallet.
-
-**Next steps:**
-- Prove facts directly from the signatures real issuers already put on PDFs (as PSE's **zkPDF** does), so issuers
-  don't need to add our data card.
-- zkTLS for banks that only show data on their website.
-- Use a real RGB stablecoin (e.g. USDT on RGB) for the deposit; Lightning for instant deposits.
-- Revocation: the tenant cancels an approval by spending its token.
-
-## Run it
-
-**Teammates, quickest way (about 5 min, no Bitcoin, no AI needed):**
-1. `git clone https://github.com/kuzeykacar/Moneyfest.git` (or *Code → Download ZIP* on GitHub)
-2. In Finder, double-click `keyproof/scripts/setup_mac.command` (once), then `keyproof/scripts/run_demo.command`
-3. Open http://127.0.0.1:8010 – drag the PDFs from `keyproof/demo_docs/` and `keyproof/real_docs/` onto the tenant screen.
-Without the local AI running, documents are read with simple rules instead (the screen says so).
-
-Requirements: a Mac (Apple Silicon), Python 3.10+. Everything installs into the project folder, no admin rights,
-no Docker.
-
+### Developers
 ```
-keyproof/scripts/setup_mac.command    # once: .venv with cryptography + rgb-lib
-scripts/setup_ai.command              # once: Node + QVAC + Qwen3 model, then keeps the local AI running
-keyproof/scripts/run_demo.command     # app with simulated RGB (no bitcoin needed)
-keyproof/scripts/run_real.command     # app with real RGB on Mutinynet (wallets must be funded)
+python3 keyproof/keyproof/make_demo.py            # trust root, issuers, signed demo PDFs (+ _EDITED copies)
+python3 keyproof/keyproof/make_team_doc.py        # Team Moneyfest signed certificate (RSA, self-issued)
+python3 keyproof/keyproof/make_untrusted_docs.py  # same income statement signed by untrusted keys
+keyproof/tools/circom-linux keyproof/circuits/keyproof.circom --r1cs --wasm -o keyproof/build
+node keyproof/tools/setup_zk.cjs                  # Groth16 setup -> web/zk/keyproof_final.zkey + verification_key.json
+python3 keyproof/tools/build_verifier.py          # standalone verifier page
+node keyproof/tools/e2e_real.cjs <screenshot-dir> # browser end-to-end test (app on :8010)
 ```
+More technical detail: [keyproof/README.md](keyproof/README.md). The 3-minute pitch and jury Q&A: [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md).
 
-Open **http://127.0.0.1:8010** (EN/IT/TR). Landlords "Create a tenant check"; tenants enter the code or open the link.
-Phones on the same Wi-Fi open tenant links at the address shown in the QR. `/admin.html` (host only): wallets,
-issuer, developer view, start over, presenter mode.
-On a Mac, double-click the `.command` files in Finder.
+## 10. Demo files
 
-**Demo flow (3 minutes):** landlord describes the tenant, the local AI fills the form → adds the flat → **Publish** →
-shares link / code / QR → tenant opens it (laptop or phone), sees the flat → drags the signed PDFs from
-`keyproof/demo_docs/` (the `_EDITED` one is rejected) → **Create my private proof** → **Send** (RGB approval token,
-~1–2 min for a block) → landlord sees ✓✓✓ → tenant **pays the deposit** (RGB stablecoin) → both see the completion
-screen, the printable receipt and the downloadable ZK proof.
+All demo people are fictional (Elena Rossi, Marco Rossi); all demo issuers are ours and labelled "(test)".
 
-**Real RGB setup:** fund the issuer wallet from https://faucet.mutinynet.com, then use the wallet page (each spend
-shows its cost first) or `keyproof/scripts/rgb_setup.command` to share sats, create RGB slots, and issue the
-stablecoin. Details and developer commands: [keyproof/README.md](keyproof/README.md).
+| File (in `keyproof/`) | Signed by | KeyProof shows |
+|---|---|---|
+| `demo_docs/1_Identity_codice_fiscale_Elena_Rossi.pdf` | Moneyfest Anagrafe (test) | ✓ trusted, identity (age, sex F) |
+| `demo_docs/2_Income_statement_Elena_Rossi.pdf` | Moneyfest Bank (test) | ✓ trusted, income €1,650 with 6 salary credits |
+| `demo_docs/3_Enrolment_certificate_Elena_Rossi.pdf` | Moneyfest University (test) | ✓ trusted, student until 30/09/2027 |
+| `demo_docs/3b_Employment_certificate_Elena_Rossi.pdf` | Moneyfest Employer (test) | ✓ trusted, employed until 30/06/2028 |
+| `demo_docs/4_Balance_certificate_Elena_Rossi.pdf` | Moneyfest Bank (test) | ✓ trusted, savings €4,800 |
+| `demo_docs/5_Guarantor_income_Marco_Rossi.pdf` | Moneyfest Bank (test) | ✓ trusted, guarantor €3,900 |
+| `demo_docs/*_EDITED.pdf` (6 files) | changed after signing | ✗ rejected |
+| `real_docs/Team_Moneyfest_membership.pdf` | Team Moneyfest (RSA, self-issued) | ⚠️ valid signature, not trusted |
+| `real_docs/Team_Moneyfest_membership_EDITED.pdf` | changed after signing | ✗ rejected |
+| `real_docs/2_Income_statement_SIGNED_BY_STRANGER.pdf` | a private person's key | ⚠️ valid signature, not trusted |
+| `real_docs/2_Income_statement_FAKE_BANK_KEY.pdf` | a key that *calls itself* Moneyfest Bank | ⚠️ valid signature, not trusted |
 
-## Repository map
+## 11. What's real today, what's next
+
+| Real today | Next |
+|---|---|
+| Signature checks (ECDSA + RSA); edited files rejected | Real issuers signing data cards (banks, comuni, universities) |
+| ZK circuit: age, sex, income, occupation, savings, guarantor, freshness, same person | zkPDF / **zkTLS**: prove from existing signatures or issuer websites |
+| Proof made and verified in the browser; downloadable; standalone verifier | EU Trusted Lists (eIDAS) via the EU DSS validator as the trust list |
+| RGB approval token + stablecoin deposit on Bitcoin (Mutinynet) | Mainnet + a real RGB stablecoin (e.g. USDT on RGB) |
+| QVAC local AI on both sides | Deposit fully through the WDK wallet |
+| Tether WDK self-custodial tenant wallet | Multi-party trusted setup, revocation (OCSP/CRL), hosted HTTPS |
+| Phone QR, receipts, EN/IT/TR, admin page | Accounts, multiple listings and applicants, persistence |
+
+## 12. Repository map
 
 | Path | What |
 |---|---|
-| `keyproof/keyproof/` | Python: `pdfsig.py` (sign/verify PDFs), `zkcrypto.py` (Poseidon, Baby Jubjub, EdDSA), `ai.py` (QVAC), `rgb.py` + `rgb_setup.py` (rgb-lib wallets), `app.py` (server), `make_demo.py` (demo issuers + documents) |
-| `keyproof/circuits/` | `keyproof.circom`: the circuit |
-| `keyproof/web/` | `index.html` (landing), `landlord.html`, `tenant.html`, `receipt.html`, `admin.html`, `issuer.html`, `wallets.html`, `dev.html`, `simple.css`/`simple.js` (design + texts), `zk/` (snarkjs, circuit wasm, proving key, verification key) |
-| `keyproof/demo_docs/` | signed demo PDFs + the edited fake |
-| `keyproof/trust/` | demo root and issuer certificates (public) |
-| `keyproof/tools/` | ZK setup and tests (witness, proof, browser end-to-end) |
-| `keyproof/docs/PITCH.md` | 3-minute demo script and jury Q&A |
-| `backend/`, `web/`, `scripts/` | **Moneyfest Aid**, our earlier idea (see below); `scripts/setup_ai.command` installs QVAC for both |
+| `keyproof/keyproof/app.py` | Server: landlord, tenant, issuer, wallets, proof bundle, phone access rules |
+| `keyproof/keyproof/pdfsig.py` | Sign and verify PDFs (CMS, ECDSA/RSA), the 4 checks, data cards |
+| `keyproof/keyproof/zkcrypto.py` | Poseidon, Baby Jubjub, EdDSA (matches circomlib) |
+| `keyproof/keyproof/ai.py`, `pdftext.py` | QVAC calls: landlord rules, reading documents, assistant texts; PDF text extraction |
+| `keyproof/keyproof/rgb.py`, `rgb_setup.py` | RGB wallets with rgb-lib (real) and a simulated version |
+| `keyproof/keyproof/make_*.py` | Demo issuers and signed documents |
+| `keyproof/circuits/keyproof.circom` | The ZK circuit |
+| `keyproof/web/` | Pages (`index`, `landlord`, `tenant`, `receipt`, `verify`, `admin`, `wallets`, `issuer`, `dev`), design (`simple.css`/`simple.js`), `zk/` (snarkjs, circuit wasm, proving key, verification key, trusted issuers) |
+| `keyproof/wdk/` | Tether WDK tenant wallet: check script and local service |
+| `keyproof/demo_docs/`, `keyproof/real_docs/` | Signed demo documents, edited copies, untrusted-signer copies |
+| `keyproof/trust/` | Trust root and issuer certificates (public) |
+| `keyproof/tools/` | ZK setup, verifier builder, AI benchmark and document test, browser end-to-end tests |
+| `keyproof/scripts/` | Double-click scripts: setup, run (demo/real), restart, AI, WDK, wallets |
+| `keyproof/docs/` | Pitch and jury Q&A, standalone verifier |
+| `scripts/` | QVAC install (`setup_ai.command`), shared by both projects |
+| `backend/`, `web/` | *Moneyfest Aid*, our earlier idea (see below) |
 
-## How we got here (all during the hackathon)
+## 13. Open-source projects we build on
 
+| Project | Used for |
+|---|---|
+| [RGB / rgb-lib](https://github.com/RGB-Tools/rgb-lib) (Python bindings 0.3.0b7) | RGB wallets: issuing, sending, receiving UDA and NIA assets |
+| [KaleidoSwap](https://kaleidoswap.com) Mutinynet indexer + RGB proxy | Bitcoin indexer and RGB consignment transport |
+| [Mutinynet](https://mutinynet.com) + faucet | Bitcoin signet test network (~30 s blocks) |
+| [QVAC](https://www.npmjs.com/package/@qvac/cli) (`@qvac/cli`, `@qvac/sdk`) | Local AI server |
+| [Qwen3.5 4B GGUF](https://huggingface.co/unsloth/Qwen3.5-4B-GGUF), Qwen3 1.7B | Local language models |
+| [Tether WDK](https://docs.wallet.tether.io) RGB module [`@utexo/wdk-wallet-rgb`](https://www.npmjs.com/package/@utexo/wdk-wallet-rgb) | Tenant's self-custodial wallet |
+| [circom](https://github.com/iden3/circom) 2.2.2 + [circomlib](https://github.com/iden3/circomlib) | ZK circuit, Poseidon, EdDSA, comparators |
+| [snarkjs](https://github.com/iden3/snarkjs) | Groth16 setup, proving and verifying |
+| [pyca/cryptography](https://github.com/pyca/cryptography), [asn1crypto](https://github.com/wbond/asn1crypto) (vendored) | PDF signatures, certificates |
+| [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (vendored) | QR codes |
+| [Playwright](https://playwright.dev) | Browser end-to-end tests |
+
+## 14. How we got here
+
+All work was done during the hackathon; nothing existed before kickoff.
 1. **Saturday morning:** a budgeting idea (no code).
-2. **Saturday afternoon:** *Moneyfest Aid*, private aid vouchers on RGB with an offline multilingual assistant
-   (code in `backend/` and `web/`).
-3. **Saturday evening → Sunday:** *KeyProof*. A jury member liked the document-verification idea but said our first
-   design (a separate "verifier agent" checking metadata) wasn't trustworthy enough. We removed our own verifier
-   completely: trust now comes only from the issuers' signatures and the math.
+2. **Saturday afternoon:** *Moneyfest Aid*, private aid vouchers on RGB with an offline assistant (`backend/`, `web/`).
+3. **Saturday evening → Sunday:** *KeyProof*. A jury member liked the document-verification idea but said our first design (a separate "verifier agent" checking metadata) wasn't trustworthy enough. We removed our own verifier entirely: trust now comes only from issuers' signatures and the math.
+4. **Sunday morning:**
+   - the local AI moved onto the tenant's documents;
+   - tested with real documents;
+   - added the sex requirement in the circuit;
+   - built the standalone verifier and the Tether WDK wallet.
 
-**Work done before the hackathon:** none. No code, prototypes or designs existed before kickoff.
+## Security note
 
-## Security
+Only Mutinynet, a Bitcoin test network, with test coins that have no value. Wallet keys, recovery words, the WDK seed, the demo issuers' private keys and the AI models stay on our machine and are excluded by `.gitignore` (every `data/` folder is ignored). Real personal documents we tested are not in this repo. In the design, documents never leave the tenant's device; the landlord receives only the proof.
 
-Only Mutinynet, a Bitcoin test network, with test coins that have no value. Wallet keys, recovery words and the
-demo issuers' private keys stay on our machine and are excluded by `.gitignore` (every `data/` folder is ignored).
-Documents never leave the tenant's device in the design; the landlord receives only the proof.
-
-## Team Moneyfest
+## Team
 
 | Name | GitHub |
 | ---- | ------ |

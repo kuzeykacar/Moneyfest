@@ -2,6 +2,9 @@
 
 **Prove you qualify for a flat without showing your documents.**
 
+> Full project description, setup for everything (local AI, real RGB, Tether WDK), demo files, tests and the
+> "real today / next" list: see the **[main README](../README.md)**. This file keeps the technical notes.
+
 To rent a room, tenants send landlords their full bank statements, ID and contracts.
 Landlords only need a few yes/no answers. KeyProof lets the tenant prove those answers
 from documents the bank, the city office or the university already signed,

@@ -13,8 +13,8 @@ if [ ! -f "$M" ]; then
   echo "$SUM  $M.part" | shasum -a 256 -c - || { echo "checksum mismatch"; read -r; exit 1; }
   mv "$M.part" "$M"
 fi
-export PATH="$HOME/Moneyfest/.node/bin:$PATH"
-cd "$HOME/Moneyfest/.qvac" || { echo "QVAC not installed: run Moneyfest/scripts/setup_ai.command once"; read -r; exit 1; }
+export PATH="$KP/../.node/bin:$PATH"
+cd "$KP/../.qvac" || { echo "QVAC not installed: run Moneyfest/scripts/setup_ai.command once"; read -r; exit 1; }
 cat > qvac.keyproof.json <<JSON
 {"serve": {"models": {"keyproof": {"src": "$M", "type": "llm", "default": true, "preload": true, "config": {"ctx_size": 8192}}}}}
 JSON
