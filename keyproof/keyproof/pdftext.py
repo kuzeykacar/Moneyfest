@@ -8,7 +8,7 @@ import re
 import zlib
 
 
-def extract_text(data: bytes, limit=6000) -> str:
+def extract_text(data: bytes, limit=20000) -> str:
     try:
         import io
 

@@ -149,10 +149,10 @@ The document text never leaves this computer. Reply with JSON only, no other tex
  "birth_date": "YYYY-MM-DD" or "", "occupation": "student" | "employed" | "",
  "valid_until": "YYYY-MM-DD" or "", "reference": protocol / reference / contract number or ""}
 Types: identity = ID card, birth or residence certificate (certificato anagrafico); income = income or salary statement,
-payslip; occupation = university enrolment certificate or work contract; savings = bank balance certificate;
+payslip; occupation = university enrolment certificate or work contract; savings = bank balance certificate or bank account statement (estratto conto);
 guarantor = income statement of a guarantor; rental = rental contract or its registration receipt (e.g. Agenzia delle Entrate RLI);
 other = anything else.
-amount: monthly net income for income/guarantor, available balance for savings, yearly rent for rental, otherwise null.
+amount: monthly net income for income/guarantor, available or final balance (saldo finale) for savings, yearly rent for rental, otherwise null.
 Dates in the text are usually DD/MM/YYYY. Copy values exactly; never invent anything."""
 
 _MONTHS = {}
@@ -180,12 +180,21 @@ def _doc_clean(raw):
             "occupation": occ if occ in ("student", "employed") else "", "valid_until": _date(raw.get("valid_until"))}
 
 
+def _excerpt(text, n=3000):
+    """Long documents (e.g. bank statements): the beginning plus the lines with totals and balances."""
+    if len(text) <= n + 600:
+        return text
+    keys = re.compile(r"saldo|balance|totale|total|reddito|income|netto|importo|canone|valid|scadenz", re.I)
+    extra = [l for l in text[n:].split("\n") if keys.search(l)][:25]
+    return text[:n] + "\n[...]\n" + "\n".join(extra)
+
+
 def read_document(text):
     """Classify a document and read its key values, with the local model (fallback: simple rules).
     Only used to sort documents and to give the tenant advice; the landlord relies on the ZK proof."""
     if not USE_FAKE and text.strip():
         try:
-            out = chat(DOC_PROMPT, "Document text:\n" + text[:3500], max_tokens=300)
+            out = chat(DOC_PROMPT, "Document text:\n" + _excerpt(text), max_tokens=300)
             m = re.search(r"\{.*\}", out, re.DOTALL)
             if m:
                 return dict(_doc_clean(json.loads(m.group(0))), source="qvac", model=LAST_MODEL["name"])
@@ -200,9 +209,9 @@ def _doc_rules(text):
         typ = "rental"
     elif re.search(r"guarant|garante|fideiuss", t):
         typ = "guarantor"
-    elif re.search(r"anagrafic|identity card|carta d.identit|data di nascita|date of birth", t):
+    elif re.search(r"anagrafic|identity card|carta d.identit|data di nascita|date of birth", t) and "estratto conto" not in t:
         typ = "identity"
-    elif re.search(r"balance certificate|saldo|available balance|giacenza", t):
+    elif re.search(r"balance certificate|estratto conto|saldo|available balance|giacenza", t):
         typ = "savings"
     elif re.search(r"enrol|iscrizione|student|contratto di lavoro|employment contract", t):
         typ = "occupation"
@@ -218,7 +227,8 @@ def _doc_rules(text):
         return ""
     amt = None
     m = re.search(r"(?:income|balance|reddito|saldo)[^\n]*?(?:EUR|€)\s*([\d.,]+)", text, re.I) or (
-        re.search(r"canone\s*\n?\s*([\d.]+),\d\d", text, re.I) if typ == "rental" else None)
+        re.search(r"canone\s*\n?\s*([\d.]+),\d\d", text, re.I) if typ == "rental" else None) or (
+        re.search(r"saldo finale[^\n]*?([\d.]+),\d\d\s*$", text, re.I | re.M) if typ == "savings" else None)
     if m:
         amt = m.group(1).replace(",", "").replace(".", "") if re.search(r"[.,]\d{3}\b", m.group(1)) else m.group(1)
     dates = re.findall(r"\b(\d{2}/\d{2}/\d{4})\b", text)
