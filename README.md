@@ -152,6 +152,12 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | Completion screen with receipt; **downloadable ZK proof** (proof + public values + verification key + tx links) that any third party can verify with `snarkjs groth16 verify`, plus a re-check button | ✅ |
 | Landlord ↔ tenant connection: application code + link + QR to share (e.g. on Idealista), private landlord dashboard link; the proof is bound to that request | ✅ |
 | Real RGB approval token + deposit on Mutinynet | ✅ |
+| Product screens: landing page, landlord adds the flat (address, type, move-in, rent, deposit), tenant sees a listing card first | ✅ |
+| Tenant drags all signed PDFs into one box; they are checked and sorted automatically (by the issuer-signed type in the data card) | ✅ |
+| Official-style signed PDFs (letterhead, protocol number, visible signature panel, still marked TEST ISSUER) | ✅ |
+| Phones on the same Wi-Fi open the tenant link / QR; landlord, wallets and admin stay on the host computer (`/admin.html`) | ✅ |
+| Printable receipt (`/receipt.html`): flat, requirements met, deposit, Bitcoin tx links, approval token, proof fingerprint | ✅ |
+| **Under discussion:** local AI on the tenant side reads each document privately (classify, read values, pre-check, advice); real official PDFs (RSA signatures, real trust list) | 🟡 |
 | Pitch script and jury Q&A | ✅ [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md) |
 
 ## What is real and what is demo
@@ -185,13 +191,16 @@ keyproof/scripts/run_demo.command     # app with simulated RGB (no bitcoin neede
 keyproof/scripts/run_real.command     # app with real RGB on Mutinynet (wallets must be funded)
 ```
 
-Open **http://127.0.0.1:8010**: choose **Tenant** or **Landlord** (simple screens, EN/IT/TR).
-Also: `/dev.html` (developer view, both sides on one page) and `/wallets.html` (wallets).
+Open **http://127.0.0.1:8010** (EN/IT/TR). Landlords "Create a tenant check"; tenants enter the code or open the link.
+Phones on the same Wi-Fi open tenant links at the address shown in the QR. `/admin.html` (host only): wallets,
+issuer, developer view, start over, presenter mode.
 On a Mac, double-click the `.command` files in Finder.
 
-**Demo flow (3 minutes):** landlord "Fill the form with local AI" → **Publish** → tenant **"Try an edited (fake)
-PDF"** (rejected) → **"Use demo documents"** → **"Create zero-knowledge proof"** → **"Send approval via RGB"** →
-wait ~1–2 min for a block → landlord sees ✓✓✓ → tenant **Confirms the deposit**.
+**Demo flow (3 minutes):** landlord describes the tenant, the local AI fills the form → adds the flat → **Publish** →
+shares link / code / QR → tenant opens it (laptop or phone), sees the flat → drags the signed PDFs from
+`keyproof/demo_docs/` (the `_EDITED` one is rejected) → **Create my private proof** → **Send** (RGB approval token,
+~1–2 min for a block) → landlord sees ✓✓✓ → tenant **pays the deposit** (RGB stablecoin) → both see the completion
+screen, the printable receipt and the downloadable ZK proof.
 
 **Real RGB setup:** fund the issuer wallet from https://faucet.mutinynet.com, then use the wallet page (each spend
 shows its cost first) or `keyproof/scripts/rgb_setup.command` to share sats, create RGB slots, and issue the
@@ -203,7 +212,7 @@ stablecoin. Details and developer commands: [keyproof/README.md](keyproof/README
 |---|---|
 | `keyproof/keyproof/` | Python: `pdfsig.py` (sign/verify PDFs), `zkcrypto.py` (Poseidon, Baby Jubjub, EdDSA), `ai.py` (QVAC), `rgb.py` + `rgb_setup.py` (rgb-lib wallets), `app.py` (server), `make_demo.py` (demo issuers + documents) |
 | `keyproof/circuits/` | `keyproof.circom`: the circuit |
-| `keyproof/web/` | `index.html` (landlord + tenant), `wallets.html`, `zk/` (snarkjs, circuit wasm, proving key, verification key) |
+| `keyproof/web/` | `index.html` (landing), `landlord.html`, `tenant.html`, `receipt.html`, `admin.html`, `issuer.html`, `wallets.html`, `dev.html`, `simple.css`/`simple.js` (design + texts), `zk/` (snarkjs, circuit wasm, proving key, verification key) |
 | `keyproof/demo_docs/` | signed demo PDFs + the edited fake |
 | `keyproof/trust/` | demo root and issuer certificates (public) |
 | `keyproof/tools/` | ZK setup and tests (witness, proof, browser end-to-end) |
