@@ -82,13 +82,18 @@ class Demo:
         rules["today"] = TODAY
         rules["maxAgeDays"] = 90
         rules["requestId"] = str(secrets.randbits(60))
+        # Short application code (shared with tenants) and a secret owner key (only for the landlord).
+        alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        code = "".join(secrets.choice(alphabet) for _ in range(8))
+        code = code[:4] + "-" + code[4:]
+        self.owner_key = secrets.token_urlsafe(16)
         self.request = {"rules": rules, "rent": int(rent or 0), "deposit": int(deposit or 0),
-                        "published": time.strftime("%H:%M:%S")}
+                        "published": time.strftime("%H:%M:%S"), "code": code}
         self.landlord.update(result=None, deposit=None, seen=None)
         self.tenant.update(approval=None, deposit=None, pending_payment=None)
         ticked = [k for k, v in rules["checks"].items() if v]
-        self.log("landlord", f"Published request #{rules['requestId'][-6:]}: checks {', '.join(ticked)}.")
-        return self.request
+        self.log("landlord", f"Published request {code}: checks {', '.join(ticked)}.")
+        return dict(self.request, owner=self.owner_key)
 
     def inbox(self):
         """Look in the landlord's RGB wallet for the approval token."""
@@ -304,6 +309,18 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/state":
             with DEMO.lock:
                 return self._send(200, DEMO.state())
+        if path.startswith("/a/"):          # short application link -> tenant screen for that code
+            code = path[3:].strip("/").upper()
+            self.send_response(302)
+            self.send_header("Location", "/tenant.html?c=" + code)
+            self.end_headers()
+            return
+        if path == "/api/landlord/owner":
+            q = self.path.split("?", 1)[1] if "?" in self.path else ""
+            key = dict(x.split("=", 1) for x in q.split("&") if "=" in x).get("o", "")
+            with DEMO.lock:
+                ok = bool(DEMO.request) and secrets.compare_digest(key, getattr(DEMO, "owner_key", "") or "")
+            return self._send(200, {"owner": ok})
         if path == "/api/ping":
             return self._send(200, {"ok": True, "threads": [t.name for t in threading.enumerate()]})
         if path == "/api/wallets":

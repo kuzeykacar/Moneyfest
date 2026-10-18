@@ -149,6 +149,7 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | **Credentials as RGB tokens** ("future" mode): issuers send signed data cards straight to the tenant's RGB wallet in one transaction; the tenant checks them (issuer seal, trusted issuer, valid, right issuer) and uses them instead of PDFs | ✅ (`/issuer.html`) |
 | Local AI assistant texts: explains requests, rejections, results and the deposit in the user's language | ✅ |
 | Wallet page: balances, assets, transactions, every spend needs Confirm | ✅ |
+| Landlord ↔ tenant connection: application code + link + QR to share (e.g. on Idealista), private landlord dashboard link; the proof is bound to that request | ✅ |
 | Real RGB approval token + deposit on Mutinynet | ✅ |
 | Pitch script and jury Q&A | ✅ [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md) |
 

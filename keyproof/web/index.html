@@ -17,6 +17,9 @@
       <a class="btn secondary block" href="/landlord.html" id="hLandlord"></a>
       <a class="btn secondary block" href="/issuer.html" id="hIssuer"></a>
     </div>
+    <div style="margin-top:26px"><div class="dim" id="hCode"></div>
+      <div class="row" style="margin-top:8px"><input id="codeIn" class="codeInput" placeholder="7F3K-92QD" maxlength="9" autocomplete="off">
+      <button class="btn secondary" id="openCode"></button></div></div>
   </div></div>
   <footer class="foot"><a href="/wallets.html" id="fWallets"></a><a href="/dev.html" id="fDev"></a></footer>
 </div>
@@ -28,7 +31,10 @@ function labels() {
   $("hTenant").innerHTML = KP.icon("user") + " " + t("home_tenant"); $("hLandlord").innerHTML = KP.icon("home") + " " + t("home_landlord");
   $("hIssuer").innerHTML = KP.icon("landmark") + " " + t("issuer") + " · bank, comune, university";
   $("fWallets").textContent = t("wallets"); $("fDev").textContent = t("dev");
+  $("hCode").textContent = t("home_code"); $("openCode").textContent = t("open") + " →";
 }
+const go = () => { const c = KP.normCode($("codeIn").value); if (c) location.href = "/a/" + c; };
+$("openCode").onclick = go; $("codeIn").onkeydown = (e) => { if (e.key === "Enter") go(); };
 $("langBox").appendChild(KP.langSelect(labels)); KP.logo(); labels();
 </script>
 </body>

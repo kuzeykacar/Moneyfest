@@ -22,6 +22,12 @@
 
   const T = {
     en: {
+      share_title: "Share with tenants", share_text: "Send this link to people interested in your flat – for example in your Idealista listing or chat. They can also scan the QR code or type the code.",
+      copy: "Copy link", copied: "Copied", code_label: "Application code", private_title: "Your private dashboard",
+      private_text: "This page's address is your private key to see applications. Don't share it.", copy_private: "Copy my private link",
+      not_owner: "This dashboard is private", not_owner_text: "Open it with your private link, or create a new request.", create_new: "Create a new request",
+      enter_title: "Enter your application code", enter_text: "The landlord gave you a link or a code like 7F3K-92QD (for example on Idealista).", open: "Open", code_wrong: "No application found for this code. Please check it.",
+      home_code: "Have a code from a landlord?",
       approved: "The landlord approved you",
       st_req: "Landlord’s request", st_docs: "Documents", st_proof: "Private proof", st_dep: "Deposit", sl_desc: "Describe your tenant", sl_pub: "Request published", sl_res: "Result",
       wallet_title: "In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
@@ -68,6 +74,12 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      share_title: "Condividi con gli inquilini", share_text: "Invia questo link alle persone interessate – ad esempio nell'annuncio o nella chat di Idealista. Possono anche scansionare il QR o digitare il codice.",
+      copy: "Copia link", copied: "Copiato", code_label: "Codice di candidatura", private_title: "La tua pagina privata",
+      private_text: "L'indirizzo di questa pagina è la tua chiave privata per vedere le candidature. Non condividerlo.", copy_private: "Copia il mio link privato",
+      not_owner: "Questa pagina è privata", not_owner_text: "Aprila con il tuo link privato o crea una nuova richiesta.", create_new: "Crea una nuova richiesta",
+      enter_title: "Inserisci il codice di candidatura", enter_text: "Il proprietario ti ha dato un link o un codice come 7F3K-92QD (ad esempio su Idealista).", open: "Apri", code_wrong: "Nessuna candidatura trovata per questo codice. Controllalo.",
+      home_code: "Hai un codice da un proprietario?",
       approved: "Il proprietario ti ha approvato",
       st_req: "Richiesta", st_docs: "Documenti", st_proof: "Prova privata", st_dep: "Deposito", sl_desc: "Descrivi l’inquilino", sl_pub: "Richiesta pubblicata", sl_res: "Risultato",
       wallet_title: "Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
@@ -114,6 +126,12 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      share_title: "Kiracılarla paylaşın", share_text: "Bu bağlantıyı dairenizle ilgilenenlere gönderin – örneğin Idealista ilanınızda veya sohbetinde. QR kodu tarayabilir ya da kodu yazabilirler.",
+      copy: "Bağlantıyı kopyala", copied: "Kopyalandı", code_label: "Başvuru kodu", private_title: "Özel sayfanız",
+      private_text: "Bu sayfanın adresi başvuruları görmeniz için özel anahtarınızdır. Paylaşmayın.", copy_private: "Özel bağlantımı kopyala",
+      not_owner: "Bu sayfa özeldir", not_owner_text: "Özel bağlantınızla açın veya yeni bir istek oluşturun.", create_new: "Yeni istek oluştur",
+      enter_title: "Başvuru kodunuzu girin", enter_text: "Ev sahibi size bir bağlantı veya 7F3K-92QD gibi bir kod verdi (örneğin Idealista'da).", open: "Aç", code_wrong: "Bu kodla bir başvuru bulunamadı. Lütfen kontrol edin.",
+      home_code: "Ev sahibinden bir kodunuz mu var?",
       approved: "Ev sahibi sizi onayladı",
       st_req: "Ev sahibinin isteği", st_docs: "Belgeler", st_proof: "Gizli kanıt", st_dep: "Depozito", sl_desc: "Kiracıyı tanımlayın", sl_pub: "İstek yayınlandı", sl_res: "Sonuç",
       wallet_title: "Cüzdanınızda", wallet_text: "Bankanızın, belediyenin ve üniversitenizin doğrudan cüzdanınıza gönderdiği resmi belgeler. PDF gerekmez.",
@@ -183,6 +201,8 @@
     shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
     lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     dot: '<circle cx="12" cy="12" r="3"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   };
   S.icon = (name, size) => `<svg class="ic" width="${size || 20}" height="${size || 20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || P.dot}</svg>`;
   S.logo = () => document.querySelectorAll(".logo").forEach((el) => (el.innerHTML = `<span class="mark">${S.icon("key", 17)}</span><span>KeyProof</span>`));
@@ -225,5 +245,15 @@
     sel.onchange = () => { S.setLang(sel.value); onChange(); };
     return sel;
   };
+  S.param = (k) => new URLSearchParams(location.search).get(k) || "";
+  S.normCode = (c) => { c = String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return c.length === 8 ? c.slice(0, 4) + "-" + c.slice(4) : c; };
+  S.copyText = async (text, btn) => {
+    try { await navigator.clipboard.writeText(text); } catch (e) {
+      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e2) { /* ignore */ } ta.remove();
+    }
+    if (btn) { const old = btn.innerHTML; btn.innerHTML = S.icon("check", 16) + " " + S.t("copied"); setTimeout(() => (btn.innerHTML = old), 1500); }
+  };
+  S.qrSvg = (text) => { try { const q = qrcode(0, "M"); q.addData(text); q.make(); return q.createSvgTag(6, 2); } catch (e) { return ""; } };
   window.KP = S;
 })();

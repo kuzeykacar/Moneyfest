@@ -44,6 +44,7 @@ let seenRequest = null;
 let rejected = null;          // last refused upload {entry, help}
 let proof = null, proving = false, proofError = null;
 let lastSig = "";
+let code = KP.normCode(KP.param("c")), codeError = false;
 
 function ask(title, text, yesLabel, onYes) {
   $("mTitle").textContent = title; $("mText").textContent = text;
@@ -61,8 +62,10 @@ function setProgress(step) { KP.steps([t("st_req"), t("st_docs"), t("st_proof"),
 // ------------------------------------------------------------ screens
 function screenWaiting() {
   setProgress(0, 4);
-  return `<div class="card"><h1>${t("t_wait_title")}</h1><p class="dim">${t("t_wait_text")}</p>
-          <p><span class="spinner"></span></p></div>`;
+  return `<div class="card"><h1 class="withicon">${KP.icon("key", 26)} ${t("enter_title")}</h1><p class="dim">${t("enter_text")}</p>
+    ${codeError ? `<div class="notice bad">${t("code_wrong")}</div>` : ""}
+    <div class="row"><input id="codeIn" class="codeInput" placeholder="7F3K-92QD" value="${esc(code)}" autocomplete="off" autocapitalize="characters" maxlength="9">
+    <button class="btn" id="openCode">${t("open")} →</button></div></div>`;
 }
 
 function screenRequest() {
@@ -168,6 +171,9 @@ async function makeProof() {
 function bind() {
   const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
   on("next1", () => { view = 2; render(true); });
+  const go = () => { code = KP.normCode($("codeIn").value); history.replaceState(null, "", "/tenant.html?c=" + code); render(true); };
+  on("openCode", go);
+  if ($("codeIn")) $("codeIn").onkeydown = (e) => { if (e.key === "Enter") go(); };
   on("next2", () => { view = 3; render(true); });
   on("back2", () => { view = 2; proofError = null; render(true); });
   on("prove", makeProof);
@@ -220,8 +226,10 @@ async function fillHelpers() {
 function render(force) {
   if (!S) return;
   if (S.request && seenRequest !== S.request.rules.requestId) { seenRequest = S.request.rules.requestId; view = 1; proof = null; proofError = null; rejected = null; }
-  const v = !S.request ? 0 : S.tenant.approval ? 4 : view;
-  const sig = JSON.stringify([v, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(),
+  const valid = S.request && code && S.request.code === code;
+  codeError = !!code && !valid;
+  const v = !valid ? 0 : S.tenant.approval ? 4 : view;
+  const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(),
     S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError,
     S.issuer && S.issuer.status]);
   if (!force && sig === lastSig) return;

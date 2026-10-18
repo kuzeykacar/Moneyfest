@@ -28,6 +28,7 @@
 
 <script src="zk/snarkjs.min.js"></script>
 <script src="zk/keyproof.js"></script>
+<script src="vendor/qrcode.js"></script>
 <script src="simple.js"></script>
 <script>
 const { api, esc, eur, $, t } = KP;
@@ -35,6 +36,7 @@ const Z = window.KeyProofZK;
 let S = null, editing = true, draft = null, aiNote = "", lastSig = "";
 let verdict = null;      // {asset, ok, steps, summary}
 let verifying = false, vk = null;
+let ownerKey = KP.param("o"), isOwner = null;
 
 const EXAMPLES = {
   en: ["Adult student, earns at least 1500 a month, studying until 2027-07-31", "Working professional, salary 2000+, savings of 5000", "Students welcome, parents as guarantor with 3000 income"],
@@ -42,6 +44,12 @@ const EXAMPLES = {
   tr: ["Ayda en az 1500 euro kazanan reşit bir öğrenci", "En az 2000 euro maaşlı ve 5000 euro birikimi olan çalışan", "Kefili ayda 3000 euro kazanan öğrenciler"],
 };
 function setProgress(step) { KP.steps([t("sl_desc"), t("sl_pub"), t("sl_res")], step); }
+
+function screenNotOwner() {
+  setProgress(1);
+  return `<div class="card"><h1 class="withicon">${KP.icon("lock", 26)} ${t("not_owner")}</h1><p class="dim">${t("not_owner_text")}</p>
+    <button class="btn" id="createNew">${t("create_new")}</button></div>`;
+}
 
 // ------------------------------------------------------------ step 1: describe + confirm the form
 function emptyRules() { return { checks: { identity: false, income: false, occupation: false, savings: false, guarantor: false }, minIncome: 0, allowStudent: false, allowEmployed: false, leaseEnd: "", minSavings: 0, minGuarantor: 0 }; }
@@ -88,7 +96,16 @@ function screenStatus() {
       <p class="dim">${t("rent")}: <b>${eur(req.rent)}</b> · ${t("deposit")}: <b>${eur(req.deposit)}</b></p>
       ${ap ? "" : `<div class="notice wait"><span class="spinner"></span> ${t("l2_wait")}</div>
       <button class="btn secondary" id="edit">${t("new_request")}</button>`}</div>`;
-  if (!ap) { setProgress(2); return reqHtml; }
+  const link = location.origin + "/a/" + req.code;
+  const share = `<div class="card share"><div class="shareGrid"><div><h2 class="withicon">${KP.icon("link")} ${t("share_title")}</h2>
+      <p class="dim">${t("share_text")}</p>
+      <div class="codeBox"><div class="small dim">${t("code_label")}</div><div class="code">${esc(req.code)}</div></div>
+      <div class="linkRow"><code>${esc(link)}</code></div>
+      <div class="row"><button class="btn" id="copyLink">${KP.icon("copy", 18)} ${t("copy")}</button>
+        <button class="btn secondary" id="copyPriv">${KP.icon("lock", 18)} ${t("copy_private")}</button></div>
+      <p class="small dim" style="margin-top:12px">${KP.icon("lock", 14)} ${t("private_text")}</p></div>
+      <div class="qr">${KP.qrSvg(link)}</div></div></div>`;
+  if (!ap) { setProgress(2); return reqHtml + share; }
   setProgress(3);
   let res;
   if (!verdict || verdict.asset !== ap.asset_id) {
@@ -105,7 +122,7 @@ function screenStatus() {
     if (d) res += `<div class="card"><h2>${t("deposit")}</h2><div class="notice ${d.status === "settled" ? "ok" : "wait"}">
         ${d.status === "settled" ? "<b>" + t("l_dep_ok", { amount: eur(d.amount) }) + "</b>" : `<span class="spinner"></span> ${t("l_dep_req", { amount: eur(d.amount) })}`}</div></div>`;
   }
-  return reqHtml + res;
+  return reqHtml + res + share;
 }
 
 // The landlord's own checks on what arrived in its RGB wallet (same as the developer view).
@@ -167,22 +184,28 @@ function bind() {
   on("publish", async () => {
     const rules = readDraft();
     if (!Object.values(rules.checks).some(Boolean)) return;
-    await api("/api/landlord/publish", { rules, rent: $("rent").value, deposit: $("deposit").value });
+    const out = await api("/api/landlord/publish", { rules, rent: $("rent").value, deposit: $("deposit").value });
+    ownerKey = out.owner; isOwner = true;
+    history.replaceState(null, "", "/landlord.html?o=" + encodeURIComponent(ownerKey));
     editing = false; verdict = null; refresh(true);
   });
   on("edit", () => { editing = true; draft = S.request.rules; render(true); });
+  on("createNew", () => { editing = true; isOwner = true; draft = null; render(true); });
+  on("copyLink", () => KP.copyText(location.origin + "/a/" + S.request.code, $("copyLink")));
+  on("copyPriv", () => KP.copyText(location.href, $("copyPriv")));
 }
 
 function render(force, keepText) {
   if (!S) return;
   const showForm = !S.request || editing;
-  const sig = JSON.stringify([showForm, KP.lang(), S.request && S.request.rules.requestId, S.tenant.approval, S.landlord.deposit, verdict && verdict.asset, !!draft]);
+  const gate = S.request && !editing && isOwner === false;
+  const sig = JSON.stringify([gate, showForm, KP.lang(), S.request && S.request.rules.requestId, S.tenant.approval, S.landlord.deposit, verdict && verdict.asset, !!draft]);
   if (!force && sig === lastSig) return;
   lastSig = sig;
-  $("main").innerHTML = showForm ? screenForm() : screenStatus();
+  $("main").innerHTML = gate ? screenNotOwner() : showForm ? screenForm() : screenStatus();
   if (keepText !== undefined && $("text")) $("text").value = keepText;
   bind(); fillHelpers();
-  if (!showForm) verify();
+  if (!showForm && !gate) verify();
 }
 function labels() {
   KP.badge("who", "home", t("landlord"));
@@ -193,6 +216,7 @@ async function refresh(force) {
   try {
     S = await api("/api/state");
     if (S.request && editing && lastSig === "") editing = false;   // page opened after publishing
+    if (S.request && isOwner === null) isOwner = (await api("/api/landlord/owner?o=" + encodeURIComponent(ownerKey))).owner;
     if (S.landlord.result && S.tenant.approval && !verdict) verify();
     render(force);
   } catch (e) { console.error(e); }
