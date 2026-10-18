@@ -15,6 +15,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import secrets
 import sys
 import threading
@@ -38,7 +39,18 @@ HOST = os.environ.get("HOST", "0.0.0.0")   # reachable from phones on the same W
 
 
 def lan_ip():
+    """Address phones can reach: the Wi-Fi address first (a wired cable may be on a different network)."""
     import socket
+    import subprocess
+    if os.environ.get("SHARE_HOST"):
+        return os.environ["SHARE_HOST"]
+    for iface in ("en0", "en1"):          # macOS: en0 is normally Wi-Fi
+        try:
+            ip = subprocess.run(["ipconfig", "getifaddr", iface], capture_output=True, text=True, timeout=2).stdout.strip()
+            if ip and _is_wifi(iface):
+                return ip
+        except Exception:
+            pass
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("10.255.255.255", 1))    # no packet is sent; just picks the Wi-Fi address
@@ -47,6 +59,33 @@ def lan_ip():
         return ip
     except Exception:
         return "127.0.0.1"
+
+
+def _is_wifi(iface):
+    import subprocess
+    try:
+        out = subprocess.run(["networksetup", "-listallhardwareports"], capture_output=True, text=True, timeout=3).stdout
+    except Exception:
+        return iface == "en0"
+    blocks = out.split("\n\n")
+    return any(("Wi-Fi" in b or "AirPort" in b) and f"Device: {iface}" in b for b in blocks)
+
+
+_OWN = {}
+
+
+def _own_ips():
+    """All addresses of this computer (so the host itself is never treated as a phone)."""
+    if time.time() - _OWN.get("t", 0) > 30:
+        import subprocess
+        ips = {lan_ip()}
+        try:
+            out = subprocess.run(["ifconfig"], capture_output=True, text=True, timeout=2).stdout
+            ips |= set(re.findall(r"inet (\d+\.\d+\.\d+\.\d+)", out))
+        except Exception:
+            pass
+        _OWN.update(t=time.time(), ips=ips)
+    return _OWN["ips"]
 
 
 # Other devices (phones) may only use the tenant side. Wallets, landlord, issuer, reset stay on this Mac.
@@ -404,7 +443,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _local(self):
         ip = self.client_address[0]
-        return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1") or ip == lan_ip()
+        return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1") or ip in _own_ips()
 
     def do_GET(self):
         path = self.path.split("?")[0]
