@@ -79,6 +79,7 @@ function screenDocs() {
     return `<div class="item"><div class="icon ${ok ? "ok" : ""}">${KP.icon(ok ? "check" : "file")}</div><div class="body">
         <div class="title">${t("d_" + s)}</div><div class="dim small">${t("s_" + s)}</div>
         <div class="${ok ? "okText" : "dim"}" style="margin-top:4px">${ok ? esc(t("original", { issuer: d.issuer })) : t("missing")}</div>
+        ${ok ? KP.aiDocHtml(d) : ""}
         ${ok ? "" : `<div class="actions row">
             <label class="btn secondary">${t("choose")}<input type="file" accept="application/pdf" class="hidden" data-slot="${s}"></label>
             ${KP.presenter() ? `<button class="btn link" data-sample="${s}">${t("use_sample")}</button>` : ""}</div>`}
@@ -90,9 +91,24 @@ function screenDocs() {
             ${docsReady() ? "" : `<label class="drop" id="drop"><div class="dTitle">${KP.icon("file", 22)} ${t("drop")}</div>
               <div style="margin-top:10px"><span class="dim">${t("drop_or")}</span> <span class="btn secondary" style="margin-left:8px">${t("drop_choose")}</span></div>
               <div class="dHint">${t("drop_hint")}</div><input type="file" accept="application/pdf" multiple class="hidden" id="dropIn"></label>`}
-            ${rej}<div class="items">${rows}</div>
+            ${rej}${aiSummary()}<div class="items">${rows}</div>
+            ${extraDocs()}
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
           <div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
+}
+
+function aiSummary() {
+  const ds = needed().map((s) => S.tenant.docs[s]).filter((d) => d && d.ok && d.precheck);
+  if (!ds.length) return "";
+  const allIn = docsReady() && needed().every((s) => S.tenant.docs[s].precheck);
+  const bad = ds.some((d) => !d.precheck.ok);
+  if (!bad && !allIn) return "";
+  return `<div class="notice ${bad ? "wait" : "ok"} aiSum">${KP.icon(bad ? "alert" : "sparkle", 18)} ${t(bad ? "ai_issue" : "ai_ok")}<div class="small dim" style="margin-top:4px">${t("ai_note")}</div></div>`;
+}
+function extraDocs() {
+  const extra = Object.entries(S.tenant.docs).filter(([s, d]) => d.ok && !needed().includes(s));
+  if (!extra.length) return "";
+  return `<div class="small dim" style="margin-top:14px">${t("ai_extra")}: ${extra.map(([s, d]) => esc(d.file)).join(", ")}</div>`;
 }
 
 function screenProof() {
@@ -246,7 +262,7 @@ function render(force) {
   const valid = S.request && code && S.request.code === code;
   codeError = !!code && !valid;
   const v = !valid ? 0 : S.tenant.approval ? 4 : view;
-  const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(),
+  const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(), Object.values(S.tenant.docs).map((d) => d.ai && d.ai.status),
     S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError, payError,
     S.issuer && S.issuer.status]);
   if (!force && sig === lastSig) return;

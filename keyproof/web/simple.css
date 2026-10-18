@@ -221,3 +221,11 @@ label.drop { display: block; cursor: pointer; }
 main, .card, .doneGrid > * { min-width: 0; }
 .doneGrid { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
 .zkcmd { max-width: 100%; }
+
+/* Local AI reading a document (tenant side) */
+.aiRead { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(59, 130, 246, .07); border: 1px solid rgba(96, 165, 250, .18); font-size: .86rem; }
+.aiRead .aiWho { color: var(--brand2); font-weight: 620; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; display: flex; gap: 6px; align-items: center; }
+.aiRead .aiFacts { color: var(--ink); margin: 4px 0 2px; }
+.aiRead .aiNote { display: flex; gap: 6px; align-items: flex-start; color: var(--dim); margin-top: 3px; }
+.aiRead .aiNote.ok .ic { color: var(--ok); } .aiRead .aiNote.bad { color: var(--wait); }
+.aiSum { margin: 0 0 14px; }

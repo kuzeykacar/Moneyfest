@@ -22,6 +22,9 @@
 
   const T = {
     en: {
+      ai_reading: "Your local AI is reading this document on this computer…", ai_by: "Read on this device by {m}", ai_rules: "Read on this device (simple rules – local AI is off)",
+      ai_extra: "Also added – not needed for this flat", ai_ok: "Local AI pre-check: everything the landlord asks for looks met.", ai_issue: "Local AI pre-check found something to look at before you continue.",
+      ai_note: "This pre-check is only advice for you. The landlord never sees it – they rely only on the signed data and the zero-knowledge proof.",
       drop: "Drag your signed PDFs here", drop_or: "or", drop_choose: "Choose files", drop_hint: "Add them all at once – KeyProof sorts them for you. Files stay on this device.",
       use_sample: "Use sample", presenter: "Presenter mode",
       flat: "The flat", l_flat: "Your flat", f_address: "Address", f_kind: "Type", f_movein: "Move-in", f_landlord: "Landlord", f_rent: "Rent", f_deposit: "Deposit", per_month: "/month",
@@ -97,6 +100,9 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      ai_reading: "La tua IA locale sta leggendo questo documento su questo computer…", ai_by: "Letto su questo dispositivo da {m}", ai_rules: "Letto su questo dispositivo (regole semplici – IA locale spenta)",
+      ai_extra: "Aggiunti anche – non necessari per questo appartamento", ai_ok: "Controllo dell'IA locale: tutti i requisiti sembrano soddisfatti.", ai_issue: "Il controllo dell'IA locale ha trovato qualcosa da verificare prima di continuare.",
+      ai_note: "Questo controllo è solo un consiglio per te. Il proprietario non lo vede: si basa solo sui dati firmati e sulla prova a conoscenza zero.",
       drop: "Trascina qui i tuoi PDF firmati", drop_or: "oppure", drop_choose: "Scegli i file", drop_hint: "Aggiungili tutti insieme: KeyProof li ordina per te. I file restano su questo dispositivo.",
       use_sample: "Usa esempio", flat: "L'appartamento", l_flat: "Il tuo appartamento", f_address: "Indirizzo", f_kind: "Tipo", f_movein: "Ingresso", f_landlord: "Proprietario", f_rent: "Affitto", f_deposit: "Deposito", per_month: "/mese",
       kinds: "Stanza in appartamento condiviso|Monolocale|Bilocale|Trilocale|Quadrilocale",
@@ -170,6 +176,9 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      ai_reading: "Yerel yapay zekânız bu belgeyi bu bilgisayarda okuyor…", ai_by: "Bu cihazda {m} tarafından okundu", ai_rules: "Bu cihazda okundu (basit kurallar – yerel yapay zekâ kapalı)",
+      ai_extra: "Ayrıca eklendi – bu daire için gerekmiyor", ai_ok: "Yerel yapay zekâ ön kontrolü: ev sahibinin istediği her şey karşılanıyor görünüyor.", ai_issue: "Yerel yapay zekâ ön kontrolü devam etmeden önce bakmanız gereken bir şey buldu.",
+      ai_note: "Bu ön kontrol yalnızca sizin için bir tavsiyedir. Ev sahibi bunu görmez; yalnızca imzalı verilere ve sıfır bilgi kanıtına güvenir.",
       drop: "İmzalı PDF'lerinizi buraya sürükleyin", drop_or: "veya", drop_choose: "Dosya seçin", drop_hint: "Hepsini birden ekleyin, KeyProof sıralar. Dosyalar bu cihazda kalır.",
       use_sample: "Örneği kullan", flat: "Daire", l_flat: "Daireniz", f_address: "Adres", f_kind: "Tür", f_movein: "Taşınma", f_landlord: "Ev sahibi", f_rent: "Kira", f_deposit: "Depozito", per_month: "/ay",
       kinds: "Paylaşımlı evde oda|Stüdyo|1+1|2+1|3+1",
@@ -383,6 +392,17 @@
         res.innerHTML = `<span class="${ok ? "okText" : "badText"}">${S.icon(ok ? "check" : "x", 18)} ${S.esc(S.t(ok ? "zk_ok" : "zk_bad"))}</span>`;
       } catch (e) { res.innerHTML = `<span class="badText">${S.esc(e.message)}</span>`; }
     };
+  };
+  // What the local AI read from a document, and the private pre-check (tenant only)
+  S.aiDocHtml = (d) => {
+    const a = d && d.ai; if (!a) return "";
+    if (a.status !== "done") return `<div class="aiRead"><span class="spinner"></span> ${S.esc(S.t("ai_reading"))}</div>`;
+    const who = a.source === "qvac" ? S.t("ai_by", { m: "QVAC · " + (a.model || "local model") }) : S.t("ai_rules");
+    const pc = d.precheck;
+    const facts = [a.title, a.issuer && a.issuer !== a.title ? a.issuer : "", a.name].filter(Boolean).map(S.esc).join(" · ");
+    return `<div class="aiRead"><div class="aiWho">${S.icon("sparkle", 14)} ${S.esc(who)}${a.seconds ? ` · ${a.seconds} s` : ""}</div>
+      ${facts ? `<div class="aiFacts">${facts}</div>` : ""}
+      ${pc ? pc.notes.map((n) => `<div class="aiNote ${n.ok ? "ok" : "bad"}">${S.icon(n.ok ? "check" : "alert", 15)} ${S.esc(n.text)}</div>`).join("") : ""}</div>`;
   };
   // Presenter mode (set on the admin page, this browser only): shows sample-document shortcuts
   S.presenter = () => { try { return localStorage.getItem("kp-presenter") === "1"; } catch (e) { return false; } };

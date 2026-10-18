@@ -139,6 +139,97 @@ def _keywords(text):
     return raw
 
 
+# ----------------------------------------------------------------- tenant side: read a document locally
+DOC_PROMPT = """You read one official document (Italian or English) for a tenant who is applying for a flat.
+The document text never leaves this computer. Reply with JSON only, no other text:
+{"type": "identity" | "income" | "occupation" | "savings" | "guarantor" | "other",
+ "title": short name of the document in English, "issuer": organisation that issued it,
+ "name": the person the document is about (for a guarantor document: the tenant whose rent is guaranteed),
+ "amount": main amount in EUR as a number or null, "issued": "YYYY-MM-DD" or "",
+ "birth_date": "YYYY-MM-DD" or "", "occupation": "student" | "employed" | "",
+ "valid_until": "YYYY-MM-DD" or ""}
+Types: identity = ID card, birth or residence certificate (certificato anagrafico); income = income or salary statement,
+payslip; occupation = university enrolment certificate or work contract; savings = bank balance certificate;
+guarantor = income statement of a guarantor; other = anything else.
+amount: monthly net income for income/guarantor, available balance for savings, otherwise null.
+Dates in the text are usually DD/MM/YYYY. Copy values exactly; never invent anything."""
+
+_MONTHS = {}
+
+
+def _date(v):
+    v = str(v or "").strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
+        return v
+    m = re.fullmatch(r"(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})", v)
+    return f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}" if m else ""
+
+
+def _doc_clean(raw):
+    t = str(raw.get("type", "other")).lower()
+    amt = raw.get("amount")
+    try:
+        amt = int(float(str(amt).replace(",", "").replace("EUR", "").replace("€", "").strip())) if amt not in (None, "", "null") else None
+    except ValueError:
+        amt = None
+    occ = str(raw.get("occupation") or "").lower()
+    return {"type": t if t in CHECKS + ["other"] else "other", "title": str(raw.get("title") or "")[:80],
+            "issuer": str(raw.get("issuer") or "")[:80], "name": str(raw.get("name") or "")[:60], "amount": amt,
+            "issued": _date(raw.get("issued")), "birth_date": _date(raw.get("birth_date")),
+            "occupation": occ if occ in ("student", "employed") else "", "valid_until": _date(raw.get("valid_until"))}
+
+
+def read_document(text):
+    """Classify a document and read its key values, with the local model (fallback: simple rules).
+    Only used to sort documents and to give the tenant advice; the landlord relies on the ZK proof."""
+    if not USE_FAKE and text.strip():
+        try:
+            out = chat(DOC_PROMPT, "Document text:\n" + text[:3500], max_tokens=300)
+            m = re.search(r"\{.*\}", out, re.DOTALL)
+            if m:
+                return dict(_doc_clean(json.loads(m.group(0))), source="qvac", model=LAST_MODEL["name"])
+        except Exception as e:
+            print(f"QVAC document reading failed, using simple rules: {e}", flush=True)
+    return dict(_doc_clean(_doc_rules(text)), source="rules", model=None)
+
+
+def _doc_rules(text):
+    t = text.lower()
+    if re.search(r"guarant|garante|fideiuss", t):
+        typ = "guarantor"
+    elif re.search(r"anagrafic|identity card|carta d.identit|data di nascita|date of birth", t):
+        typ = "identity"
+    elif re.search(r"balance certificate|saldo|available balance|giacenza", t):
+        typ = "savings"
+    elif re.search(r"enrol|iscrizione|student|contratto di lavoro|employment contract", t):
+        typ = "occupation"
+    elif re.search(r"income|reddito|salary|stipendio|busta paga|payslip", t):
+        typ = "income"
+    else:
+        typ = "other"
+    def after(labels):
+        for l in labels:
+            m = re.search(r"^\s*" + l + r"\b[ :]*([^\n]+)", text, re.I | re.M)
+            if m:
+                return m.group(1).strip()
+        return ""
+    amt = None
+    m = re.search(r"(?:income|balance|reddito|saldo)[^\n]*?(?:EUR|€)\s*([\d.,]+)", text, re.I)
+    if m:
+        amt = m.group(1).replace(",", "").replace(".", "") if re.search(r"[.,]\d{3}\b", m.group(1)) else m.group(1)
+    dates = re.findall(r"\b(\d{2}/\d{2}/\d{4})\b", text)
+    issued = re.search(r"issued[ :]*(\d{2}/\d{2}/\d{4})", text, re.I)
+    until = re.search(r"valid until (\d{2}/\d{2}/\d{4})", text, re.I)
+    name = after(["account holder", "cognome e nome", "student", "guarantees the rent of", "name"])
+    name = re.sub(r"\s*\(.*", "", name)
+    first = text.strip().split("\n")[0] if text.strip() else ""
+    return {"type": typ, "title": (text.strip().split("\n") + ["", "", ""])[2][:80], "issuer": first, "name": name, "amount": amt,
+            "issued": issued.group(1) if issued else (dates[0] if dates else ""),
+            "birth_date": after(["data di nascita", "date of birth"]),
+            "occupation": "student" if typ == "occupation" and re.search(r"student|iscrizione|enrol", t) else ("employed" if typ == "occupation" else ""),
+            "valid_until": until.group(1) if until else ""}
+
+
 if __name__ == "__main__":
     for s in ["Student in Turin, earns at least 1500 a month, must be an adult",
               "Working professional, salary 2000+, savings of 5000",

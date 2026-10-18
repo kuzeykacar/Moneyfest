@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from cryptography import x509  # noqa: E402
 
 import ai  # noqa: E402
+import pdftext  # noqa: E402
 import pdfsig  # noqa: E402
 import rgb  # noqa: E402
 
@@ -160,10 +161,60 @@ class Demo:
         if r["ok"]:
             self.tenant["docs"][slot] = entry
             self.log("tenant", f"{filename}: signature valid ({r['issuer']}). Kept on this device.")
+            entry["ai"] = {"status": "reading"}
+            text = pdftext.extract_text(data)
+            threading.Thread(target=self._read_doc, args=(entry, text), daemon=True).start()
         else:
             failed = next(c for c in r["checks"] if not c["ok"])
             self.log("tenant", f"{filename}: REJECTED, {failed['check']}: {failed['detail']}.")
         return entry
+
+    def _read_doc(self, entry, text):
+        """Local AI reads the document on this computer: what it is and its key values."""
+        t0 = time.time()
+        try:
+            res = ai.read_document(text)
+        except Exception as e:
+            res = {"type": "other", "source": "error", "error": str(e)}
+        res["seconds"] = round(time.time() - t0, 1)
+        res["status"] = "done"
+        with self.lock:
+            entry["ai"] = res
+            self.log("tenant", f"{entry['file']}: read by the local AI as '{res.get('type')}' ({res.get('source')}, {res['seconds']} s). Text never left this device.")
+
+    def precheck(self, slot, entry, rules, id_name):
+        """Advice for the tenant from what the AI read. Never sent to the landlord, never used for approval."""
+        a = entry.get("ai") or {}
+        if a.get("status") != "done":
+            return None
+        notes, ok = [], True
+        def add(good, text):
+            nonlocal ok
+            ok = ok and good
+            notes.append({"ok": good, "text": text})
+        if a.get("type") not in (slot, None, "") :
+            add(False, f"The AI reads this as '{a.get('type')}', but the issuer signed it as '{slot}'. The proof uses the issuer's signed label.")
+        amt = a.get("amount")
+        need = {"income": rules.get("minIncome"), "savings": rules.get("minSavings"), "guarantor": rules.get("minGuarantor")}.get(slot)
+        if need and amt is not None:
+            add(amt >= need, f"Shows €{amt:,} – the landlord asks for at least €{need:,}.")
+        if slot == "identity" and a.get("birth_date"):
+            b = dt.date.fromisoformat(a["birth_date"]); today = dt.date.fromisoformat(rules.get("today", TODAY))
+            age = today.year - b.year - ((today.month, today.day) < (b.month, b.day))
+            add(age >= 18, f"Born {b.strftime('%d/%m/%Y')}: age {age}.")
+        if slot == "occupation":
+            kind = a.get("occupation")
+            allowed = [k for k, v in (("student", rules.get("allowStudent")), ("employed", rules.get("allowEmployed"))) if v]
+            if kind and allowed:
+                add(kind in allowed, f"Shows you are {'a student' if kind == 'student' else 'employed'}.")
+            if a.get("valid_until") and rules.get("leaseEnd"):
+                add(a["valid_until"] >= rules["leaseEnd"], f"Valid until {dt.date.fromisoformat(a['valid_until']).strftime('%d/%m/%Y')}; the lease ends {dt.date.fromisoformat(rules['leaseEnd']).strftime('%d/%m/%Y')}.")
+        if a.get("issued"):
+            days_old = (dt.date.fromisoformat(rules.get("today", TODAY)) - dt.date.fromisoformat(a["issued"])).days
+            add(days_old <= rules.get("maxAgeDays", 90), f"Issued {days_old} days ago" + ("." if days_old <= rules.get("maxAgeDays", 90) else f" – documents must be less than {rules.get('maxAgeDays', 90)} days old. Ask for a new one."))
+        if id_name and a.get("name") and slot != "identity" and a["name"].lower() != id_name.lower():
+            add(False, f"Name '{a['name']}' differs from your ID ('{id_name}').")
+        return {"ok": ok, "notes": notes}
 
     # ------------------------------------------------------------- credentials via RGB ("future" mode)
     ISSUER_FILES = {1: ("comune", "Identity credential"), 2: ("bank", "Income credential"),
@@ -273,6 +324,14 @@ class Demo:
                 if d["status"] == "settled" and side == "landlord":
                     self.log("landlord", f"Deposit received: {d['amount']} tUSDT.", self.rgb.link(d["tid"]))
         tenant_docs = {k: {kk: vv for kk, vv in v.items()} for k, v in self.tenant["docs"].items()}
+        if self.request:
+            idd = (self.tenant["docs"].get("identity") or {}).get("ai") or {}
+            for k, v in tenant_docs.items():
+                try:
+                    v["precheck"] = self.precheck(k, v, self.request["rules"], idd.get("name"))
+                except Exception as e:
+                    v["precheck"] = None
+                    print("precheck failed", e, flush=True)
         return {
             "mode": {"rgb": "real" if self.rgb.real else "simulated",
                      "ai": "qvac" if not ai.USE_FAKE else "keywords"},

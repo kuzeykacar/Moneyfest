@@ -157,7 +157,8 @@ After the test: tenant 900 TUSDT, landlord 1,100 TUSDT. Total network fees so fa
 | Official-style signed PDFs (letterhead, protocol number, visible signature panel, still marked TEST ISSUER) | ✅ |
 | Phones on the same Wi-Fi open the tenant link / QR; landlord, wallets and admin stay on the host computer (`/admin.html`) | ✅ |
 | Printable receipt (`/receipt.html`): flat, requirements met, deposit, Bitcoin tx links, approval token, proof fingerprint | ✅ |
-| **Under discussion:** local AI on the tenant side reads each document privately (classify, read values, pre-check, advice); real official PDFs (RSA signatures, real trust list) | 🟡 |
+| **Local AI on the tenant side (QVAC):** reads each uploaded PDF on the tenant's own device – what it is, issuer, name, amount, dates – and gives a private pre-check with advice (amount vs the landlord's minimum, age, document age, name matches the ID, enrolment lasts until the lease ends, AI label vs issuer-signed label). Advice only: the landlord relies on the signatures and the ZK proof. Test: `keyproof/scripts/test_ai_docs.command` | ✅ |
+| Real official PDFs (RSA signatures, real trust list) | 🟡 next |
 | Pitch script and jury Q&A | ✅ [keyproof/docs/PITCH.md](keyproof/docs/PITCH.md) |
 
 ## What is real and what is demo
