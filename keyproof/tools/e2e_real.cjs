@@ -21,6 +21,7 @@ const dir = process.argv[2], D = __dirname + '/../demo_docs/';
   await T.click('#next1'); await T.waitForSelector('#dropIn', { state: 'attached' }); await shot(T, '05_tenant_docs_empty');
   await T.setInputFiles('#dropIn', [D + 'Income_statement_Elena_Rossi_EDITED.pdf']); await T.waitForSelector('.notice.bad'); await T.waitForTimeout(800);
   await shot(T, '06_tenant_fake_rejected');
+  if (process.env.REAL_PDFS) { await T.setInputFiles('#dropIn', process.env.REAL_PDFS.split(',')); await T.waitForTimeout(2500); await shot(T, '06b_tenant_real_docs'); }
   await T.setInputFiles('#dropIn', ['Certificato_anagrafico_Elena_Rossi.pdf', 'Income_statement_Elena_Rossi.pdf', 'Certificato_iscrizione_Elena_Rossi.pdf',
     'Balance_certificate_Elena_Rossi.pdf', 'Guarantor_income_Marco_Rossi.pdf'].map((f) => D + f));
   await T.waitForSelector('#next2:not([disabled])', { timeout: 20000 }); await T.waitForTimeout(500);

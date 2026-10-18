@@ -142,16 +142,17 @@ def _keywords(text):
 # ----------------------------------------------------------------- tenant side: read a document locally
 DOC_PROMPT = """You read one official document (Italian or English) for a tenant who is applying for a flat.
 The document text never leaves this computer. Reply with JSON only, no other text:
-{"type": "identity" | "income" | "occupation" | "savings" | "guarantor" | "other",
+{"type": "identity" | "income" | "occupation" | "savings" | "guarantor" | "rental" | "other",
  "title": short name of the document in English, "issuer": organisation that issued it,
  "name": the person the document is about (for a guarantor document: the tenant whose rent is guaranteed),
  "amount": main amount in EUR as a number or null, "issued": "YYYY-MM-DD" or "",
  "birth_date": "YYYY-MM-DD" or "", "occupation": "student" | "employed" | "",
- "valid_until": "YYYY-MM-DD" or ""}
+ "valid_until": "YYYY-MM-DD" or "", "reference": protocol / reference / contract number or ""}
 Types: identity = ID card, birth or residence certificate (certificato anagrafico); income = income or salary statement,
 payslip; occupation = university enrolment certificate or work contract; savings = bank balance certificate;
-guarantor = income statement of a guarantor; other = anything else.
-amount: monthly net income for income/guarantor, available balance for savings, otherwise null.
+guarantor = income statement of a guarantor; rental = rental contract or its registration receipt (e.g. Agenzia delle Entrate RLI);
+other = anything else.
+amount: monthly net income for income/guarantor, available balance for savings, yearly rent for rental, otherwise null.
 Dates in the text are usually DD/MM/YYYY. Copy values exactly; never invent anything."""
 
 _MONTHS = {}
@@ -173,7 +174,7 @@ def _doc_clean(raw):
     except ValueError:
         amt = None
     occ = str(raw.get("occupation") or "").lower()
-    return {"type": t if t in CHECKS + ["other"] else "other", "title": str(raw.get("title") or "")[:80],
+    return {"type": t if t in CHECKS + ["rental", "other"] else "other", "reference": str(raw.get("reference") or "")[:60], "title": str(raw.get("title") or "")[:80],
             "issuer": str(raw.get("issuer") or "")[:80], "name": str(raw.get("name") or "")[:60], "amount": amt,
             "issued": _date(raw.get("issued")), "birth_date": _date(raw.get("birth_date")),
             "occupation": occ if occ in ("student", "employed") else "", "valid_until": _date(raw.get("valid_until"))}
@@ -195,7 +196,9 @@ def read_document(text):
 
 def _doc_rules(text):
     t = text.lower()
-    if re.search(r"guarant|garante|fideiuss", t):
+    if re.search(r"locazione|rental contract|lease agreement|contratto di affitto", t):
+        typ = "rental"
+    elif re.search(r"guarant|garante|fideiuss", t):
         typ = "guarantor"
     elif re.search(r"anagrafic|identity card|carta d.identit|data di nascita|date of birth", t):
         typ = "identity"
@@ -214,7 +217,8 @@ def _doc_rules(text):
                 return m.group(1).strip()
         return ""
     amt = None
-    m = re.search(r"(?:income|balance|reddito|saldo)[^\n]*?(?:EUR|€)\s*([\d.,]+)", text, re.I)
+    m = re.search(r"(?:income|balance|reddito|saldo)[^\n]*?(?:EUR|€)\s*([\d.,]+)", text, re.I) or (
+        re.search(r"canone\s*\n?\s*([\d.]+),\d\d", text, re.I) if typ == "rental" else None)
     if m:
         amt = m.group(1).replace(",", "").replace(".", "") if re.search(r"[.,]\d{3}\b", m.group(1)) else m.group(1)
     dates = re.findall(r"\b(\d{2}/\d{2}/\d{4})\b", text)
@@ -227,7 +231,8 @@ def _doc_rules(text):
             "issued": issued.group(1) if issued else (dates[0] if dates else ""),
             "birth_date": after(["data di nascita", "date of birth"]),
             "occupation": "student" if typ == "occupation" and re.search(r"student|iscrizione|enrol", t) else ("employed" if typ == "occupation" else ""),
-            "valid_until": until.group(1) if until else ""}
+            "valid_until": until.group(1) if until else "",
+            "reference": (re.search(r"(?:protocollo|prot\. n\.|ref\.)\s*([A-Z0-9/-]{6,})", text, re.I) or [None, ""])[1]}
 
 
 if __name__ == "__main__":

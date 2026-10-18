@@ -88,11 +88,11 @@ function screenDocs() {
   const rej = rejected ? `<div class="notice bad"><b>${KP.icon("alert", 18)} ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
                           <div id="helpRej">${KP.helperHtml(rejected.help, rejected.source)}</div>` : "";
   return `<div class="card wide-items"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>
-            ${docsReady() ? "" : `<label class="drop" id="drop"><div class="dTitle">${KP.icon("file", 22)} ${t("drop")}</div>
+            ${`<label class="drop" id="drop"><div class="dTitle">${KP.icon("file", 22)} ${t("drop")}</div>
               <div style="margin-top:10px"><span class="dim">${t("drop_or")}</span> <span class="btn secondary" style="margin-left:8px">${t("drop_choose")}</span></div>
               <div class="dHint">${t("drop_hint")}</div><input type="file" accept="application/pdf" multiple class="hidden" id="dropIn"></label>`}
             ${rej}${aiSummary()}<div class="items">${rows}</div>
-            ${extraDocs()}
+            ${extraDocs()}${realDocs()}
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
           <div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
 }
@@ -104,6 +104,15 @@ function aiSummary() {
   const bad = ds.some((d) => !d.precheck.ok);
   if (!bad && !allIn) return "";
   return `<div class="notice ${bad ? "wait" : "ok"} aiSum">${KP.icon(bad ? "alert" : "sparkle", 18)} ${t(bad ? "ai_issue" : "ai_ok")}<div class="small dim" style="margin-top:4px">${t("ai_note")}</div></div>`;
+}
+function realDocs() {
+  const list = S.tenant.real || [];
+  if (!list.length) return "";
+  return `<div class="realBox"><h2 class="withicon">${KP.icon("file")} ${t("real_title")}</h2><p class="dim small">${t("real_text")}</p>
+    ${list.map((d) => `<div class="item"><div class="icon ${d.level === "signed" ? "ok" : ""}">${KP.icon(d.level === "signed" ? "shield" : "file")}</div><div class="body">
+      <div class="title">${esc(d.file)}</div>
+      <div class="small ${d.level === "signed" ? "okText" : "dim"}">${esc(d.level === "signed" ? t("real_signed", { s: d.signer }) : t("real_unsigned"))}</div>
+      ${KP.aiDocHtml(d)}</div></div>`).join("")}</div>`;
 }
 function extraDocs() {
   const extra = Object.entries(S.tenant.docs).filter(([s, d]) => d.ok && !needed().includes(s));
@@ -166,7 +175,7 @@ async function upload(file) {
   handleUpload(await api("/api/tenant/upload", { filename: file.name, pdf: btoa(bin) }));
 }
 async function handleUpload(entry) {
-  if (entry.ok) { rejected = null; proof = null; proofError = null; }
+  if (entry.ok || entry.real) { rejected = null; if (entry.ok) { proof = null; proofError = null; } }
   else {
     const failed = entry.checks.find((c) => !c.ok) || { detail: "no digital signature" };
     rejected = { entry, reason: failed.detail, help: "", source: "" };
@@ -262,7 +271,7 @@ function render(force) {
   const valid = S.request && code && S.request.code === code;
   codeError = !!code && !valid;
   const v = !valid ? 0 : S.tenant.approval ? 4 : view;
-  const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(), Object.values(S.tenant.docs).map((d) => d.ai && d.ai.status),
+  const sig = JSON.stringify([v, code, codeError, KP.lang(), S.request && S.request.rules.requestId, Object.keys(S.tenant.docs).sort(), Object.values(S.tenant.docs).map((d) => d.ai && d.ai.status), (S.tenant.real || []).map((d) => d.file + (d.ai && d.ai.status)),
     S.tenant.approval, S.tenant.pending_payment, S.tenant.deposit, !!S.landlord.result, rejected && rejected.help, !!proof, proving, proofError, payError,
     S.issuer && S.issuer.status]);
   if (!force && sig === lastSig) return;

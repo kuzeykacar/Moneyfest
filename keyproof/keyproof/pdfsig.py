@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "vendor"))
 from asn1crypto import cms  # noqa: E402
 from cryptography import x509  # noqa: E402
 from cryptography.hazmat.primitives import hashes, serialization  # noqa: E402
-from cryptography.hazmat.primitives.asymmetric import ec  # noqa: E402
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa  # noqa: E402
 from cryptography.hazmat.primitives.serialization import pkcs7  # noqa: E402
 
 # Our own (demo) certificate extension: issuer role, allowed document types, and its ZK card key.
@@ -125,6 +125,14 @@ class Check:
         return bool(self.items) and all(i["ok"] for i in self.items)
 
 
+def _cert_name(cert):
+    for oid in (x509.NameOID.ORGANIZATION_NAME, x509.NameOID.COMMON_NAME):
+        v = cert.subject.get_attributes_for_oid(oid)
+        if v:
+            return v[0].value
+    return cert.subject.rfc4514_string()
+
+
 def verify_pdf(pdf, root_cert, revoked_serials=(), expected_type=None, now=None):
     """Run the 4 checks. Returns {"ok", "checks", "issuer", "card"}."""
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -133,10 +141,12 @@ def verify_pdf(pdf, root_cert, revoked_serials=(), expected_type=None, now=None)
 
     ranges = re.findall(rb"/ByteRange \[(\d+) (\d+) (\d+) (\d+)\]", pdf)
     if len(ranges) != 1:
+        result["unsigned"] = not ranges
         c.add("not changed", False, "no digital signature found" if not ranges else "more than one signature")
         return result
     a, b, cc, d = map(int, ranges[0])
     if a != 0 or cc + d != len(pdf):
+        result["tampered"] = True
         c.add("not changed", False, "content was added after signing")
         return result
     try:
@@ -157,13 +167,25 @@ def verify_pdf(pdf, root_cert, revoked_serials=(), expected_type=None, now=None)
         c.add("not changed", False, f"signature is unreadable ({type(e).__name__})")
         return result
 
-    digest = hashlib.sha256(pdf[a:a + b] + pdf[cc:cc + d]).digest()
+    # Works for our ECDSA demo issuers and for real issuers (RSA, SHA-256/384/512).
+    algo = si["digest_algorithm"]["algorithm"].native
+    hmod = {"sha1": hashlib.sha1, "sha256": hashlib.sha256, "sha384": hashlib.sha384, "sha512": hashlib.sha512}.get(algo, hashlib.sha256)
+    hcls = {"sha1": hashes.SHA1, "sha256": hashes.SHA256, "sha384": hashes.SHA384, "sha512": hashes.SHA512}.get(algo, hashes.SHA256)
+    digest = hmod(pdf[a:a + b] + pdf[cc:cc + d]).digest()
     attrs_der = b"\x31" + si["signed_attrs"].dump()[1:]
     try:
-        cert.public_key().verify(si["signature"].native, attrs_der, ec.ECDSA(hashes.SHA256()))
+        pk = cert.public_key()
+        if isinstance(pk, rsa.RSAPublicKey):
+            sigalg = si["signature_algorithm"]["algorithm"].native
+            pad = (padding.PSS(mgf=padding.MGF1(hcls()), salt_length=padding.PSS.AUTO) if sigalg == "rsassa_pss" else padding.PKCS1v15())
+            pk.verify(si["signature"].native, attrs_der, pad, hcls())
+        else:
+            pk.verify(si["signature"].native, attrs_der, ec.ECDSA(hcls()))
         sig_ok = True
     except Exception:
         sig_ok = False
+    result["signer"] = _cert_name(cert)
+    result["tampered"] = not (digest == signed_digest and sig_ok)
     if not c.add("not changed", digest == signed_digest and sig_ok,
                  "every byte matches what the issuer signed" if digest == signed_digest and sig_ok
                  else "the document was modified after it was signed"):
@@ -174,7 +196,7 @@ def verify_pdf(pdf, root_cert, revoked_serials=(), expected_type=None, now=None)
         trusted = True
     except Exception:
         trusted = False
-    name = cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)[0].value
+    name = _cert_name(cert)
     result["issuer"] = name
     if not c.add("trusted issuer", trusted,
                  f"{name}, certified by {root_cert.subject.rfc4514_string()}" if trusted
@@ -233,7 +255,7 @@ def verify_credential(card, issuer_cert_pem, root_cert, revoked_serials=(), now=
         trusted = True
     except Exception:
         trusted = False
-    name = cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)[0].value
+    name = _cert_name(cert)
     result["issuer"] = name
     if not c.add("trusted issuer", trusted, f"{name}, certified by {root_cert.subject.rfc4514_string()}" if trusted
                  else f"{name} is not certified by a trusted authority"):

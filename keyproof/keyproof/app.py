@@ -164,6 +164,18 @@ class Demo:
             entry["ai"] = {"status": "reading"}
             text = pdftext.extract_text(data)
             threading.Thread(target=self._read_doc, args=(entry, text), daemon=True).start()
+        elif not r.get("tampered") and (r.get("unsigned") or r.get("signer")):
+            # A real document from outside the KeyProof trust list: intact (or unsigned), read by the local AI,
+            # shown to the tenant, never used for the proof.
+            entry.update(real=True, signer=r.get("signer"), level="signed" if r.get("signer") else "unsigned")
+            self.tenant.setdefault("real", [])
+            self.tenant["real"] = [x for x in self.tenant["real"] if x["file"] != filename] + [entry]
+            entry.pop("card", None)
+            self.log("tenant", f"{filename}: real document ({'signed by ' + r['signer'] if r.get('signer') else 'no digital signature'}); "
+                                "read on this device, not used for the proof.")
+            entry["ai"] = {"status": "reading"}
+            text = pdftext.extract_text(data)
+            threading.Thread(target=self._read_doc, args=(entry, text), daemon=True).start()
         else:
             failed = next(c for c in r["checks"] if not c["ok"])
             self.log("tenant", f"{filename}: REJECTED, {failed['check']}: {failed['detail']}.")
@@ -336,7 +348,7 @@ class Demo:
             "mode": {"rgb": "real" if self.rgb.real else "simulated",
                      "ai": "qvac" if not ai.USE_FAKE else "keywords"},
             "request": self.request,
-            "tenant": {"docs": tenant_docs, "log": self.tenant["log"][:30], "approval": appr,
+            "tenant": {"docs": tenant_docs, "real": self.tenant.get("real", []), "log": self.tenant["log"][:30], "approval": appr,
                        "deposit": self.tenant["deposit"], "pending_payment": self.tenant["pending_payment"]},
             "landlord": {"log": self.landlord["log"][:30], "result": self.landlord["result"],
                          "deposit": self.landlord["deposit"]},

@@ -22,6 +22,9 @@
 
   const T = {
     en: {
+      real_title: "Your real documents", real_text: "Official documents from outside the KeyProof issuer list. Your local AI reads them on this computer to help you. They are not used for the zero-knowledge proof – only documents from trusted issuers are.",
+      real_signed: "Digitally signed by {s} – not changed since signing ✓ (issuer not yet on the KeyProof trust list)", real_unsigned: "No digital signature – KeyProof can't prove it is genuine. It can be checked with its protocol number on the issuer's website.",
+      real_ref: "Reference", t_rental: "Rental contract / registration", t_other: "Other document",
       ai_reading: "Your local AI is reading this document on this computer…", ai_by: "Read on this device by {m}", ai_rules: "Read on this device (simple rules – local AI is off)",
       ai_extra: "Also added – not needed for this flat", ai_ok: "Local AI pre-check: everything the landlord asks for looks met.", ai_issue: "Local AI pre-check found something to look at before you continue.",
       ai_note: "This pre-check is only advice for you. The landlord never sees it – they rely only on the signed data and the zero-knowledge proof.",
@@ -100,6 +103,9 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      real_title: "I tuoi documenti reali", real_text: "Documenti ufficiali di enti non ancora nella lista di KeyProof. La tua IA locale li legge su questo computer per aiutarti. Non vengono usati per la prova a conoscenza zero.",
+      real_signed: "Firmato digitalmente da {s} – non modificato dopo la firma ✓ (ente non ancora nella lista di KeyProof)", real_unsigned: "Nessuna firma digitale: KeyProof non può provarne l'autenticità. Si può verificare con il numero di protocollo sul sito dell'ente.",
+      real_ref: "Riferimento", t_rental: "Contratto di locazione / registrazione", t_other: "Altro documento",
       ai_reading: "La tua IA locale sta leggendo questo documento su questo computer…", ai_by: "Letto su questo dispositivo da {m}", ai_rules: "Letto su questo dispositivo (regole semplici – IA locale spenta)",
       ai_extra: "Aggiunti anche – non necessari per questo appartamento", ai_ok: "Controllo dell'IA locale: tutti i requisiti sembrano soddisfatti.", ai_issue: "Il controllo dell'IA locale ha trovato qualcosa da verificare prima di continuare.",
       ai_note: "Questo controllo è solo un consiglio per te. Il proprietario non lo vede: si basa solo sui dati firmati e sulla prova a conoscenza zero.",
@@ -176,6 +182,9 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      real_title: "Gerçek belgeleriniz", real_text: "KeyProof listesinde henüz olmayan kurumlardan resmi belgeler. Yerel yapay zekânız size yardım etmek için bunları bu bilgisayarda okur. Sıfır bilgi kanıtında kullanılmazlar.",
+      real_signed: "{s} tarafından dijital olarak imzalı – imzadan sonra değişmemiş ✓ (kurum henüz KeyProof listesinde değil)", real_unsigned: "Dijital imza yok – KeyProof gerçek olduğunu kanıtlayamaz. Kurumun sitesinde protokol numarasıyla doğrulanabilir.",
+      real_ref: "Referans", t_rental: "Kira sözleşmesi / tescil", t_other: "Diğer belge",
       ai_reading: "Yerel yapay zekânız bu belgeyi bu bilgisayarda okuyor…", ai_by: "Bu cihazda {m} tarafından okundu", ai_rules: "Bu cihazda okundu (basit kurallar – yerel yapay zekâ kapalı)",
       ai_extra: "Ayrıca eklendi – bu daire için gerekmiyor", ai_ok: "Yerel yapay zekâ ön kontrolü: ev sahibinin istediği her şey karşılanıyor görünüyor.", ai_issue: "Yerel yapay zekâ ön kontrolü devam etmeden önce bakmanız gereken bir şey buldu.",
       ai_note: "Bu ön kontrol yalnızca sizin için bir tavsiyedir. Ev sahibi bunu görmez; yalnızca imzalı verilere ve sıfır bilgi kanıtına güvenir.",
@@ -402,6 +411,9 @@
     const facts = [a.title, a.issuer && a.issuer !== a.title ? a.issuer : "", a.name].filter(Boolean).map(S.esc).join(" · ");
     return `<div class="aiRead"><div class="aiWho">${S.icon("sparkle", 14)} ${S.esc(who)}${a.seconds ? ` · ${a.seconds} s` : ""}</div>
       ${facts ? `<div class="aiFacts">${facts}</div>` : ""}
+      ${d.real ? `<div class="aiFacts small">${[a.type === "rental" ? S.t("t_rental") : S.SLOTS.includes(a.type) ? S.t("d_" + a.type) : S.t("t_other"),
+          a.amount != null ? S.eur(a.amount) + (a.type === "rental" ? "/yr" : "") : "", a.issued ? new Date(a.issued + "T00:00:00Z").toLocaleDateString(lang, { timeZone: "UTC" }) : "",
+          a.reference ? S.t("real_ref") + " " + a.reference : ""].filter(Boolean).map(S.esc).join(" · ")}</div>` : ""}
       ${pc ? pc.notes.map((n) => `<div class="aiNote ${n.ok ? "ok" : "bad"}">${S.icon(n.ok ? "check" : "alert", 15)} ${S.esc(n.text)}</div>`).join("") : ""}</div>`;
   };
   // Presenter mode (set on the admin page, this browser only): shows sample-document shortcuts

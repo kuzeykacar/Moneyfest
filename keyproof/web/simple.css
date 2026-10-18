@@ -229,3 +229,4 @@ main, .card, .doneGrid > * { min-width: 0; }
 .aiRead .aiNote { display: flex; gap: 6px; align-items: flex-start; color: var(--dim); margin-top: 3px; }
 .aiRead .aiNote.ok .ic { color: var(--ok); } .aiRead .aiNote.bad { color: var(--wait); }
 .aiSum { margin: 0 0 14px; }
+.realBox { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
