@@ -218,7 +218,7 @@
     const ol = document.getElementById("progress");
     if (ol) ol.innerHTML = labels.map((l, i) => `<li class="${i + 1 < current ? "done" : i + 1 === current ? "on" : ""}"><span class="n">${i + 1 < current ? S.icon("check", 14) : i + 1}</span><span class="l">${S.esc(l)}</span></li>`).join("");
     const info = document.getElementById("stepinfo");
-    if (info) info.textContent = current ? S.t("step", { a: current, b: labels.length }) : "";
+    if (info) info.innerHTML = current ? S.esc(S.t("step", { a: current, b: labels.length })) + `<span class="stepname"> · ${S.esc(labels[current - 1])}</span>` : "";
   };
 
   S.SLOTS = ["identity", "income", "occupation", "savings", "guarantor"];
