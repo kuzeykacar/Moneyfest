@@ -325,6 +325,10 @@ All demo people are fictional (Elena Rossi, Marco Rossi); all demo issuers are o
 
 Only Mutinynet, a Bitcoin test network, with test coins that have no value. Wallet keys, recovery words, the WDK seed, the demo issuers' private keys and the AI models stay on our machine and are excluded by `.gitignore` (every `data/` folder is ignored). Real personal documents we tested are not in this repo. In the design, documents never leave the tenant's device; the landlord receives only the proof.
 
+## Third-party code
+
+See [keyproof/THIRD_PARTY_NOTICES.md](keyproof/THIRD_PARTY_NOTICES.md) for every open-source project, file and license we use.
+
 ## Team
 
 | Name | GitHub |
