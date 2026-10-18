@@ -116,22 +116,21 @@ function screenAfter() {
   setProgress(4, 4);
   const ap = S.tenant.approval, pp = S.tenant.pending_payment, dep = S.tenant.deposit;
   const res = S.landlord.result;
-  let html = `<div class="card"><h1>${ap.status === "settled" ? t("sent_ok") : t("send")}</h1>`;
-  if (ap.status !== "settled") html += `<div class="notice wait"><span class="spinner"></span> ${t("sent_wait")}</div>`;
-  else if (!res) html += `<div class="notice wait"><span class="spinner"></span> ${t("waiting_landlord")}</div>`;
-  html += `</div>`;
+  const line = (state, text) => `<div class="result-line"><span class="icon ${state}">${KP.icon(state === "ok" ? "check" : state === "bad" ? "x" : "dot")}</span>${text}</div>`;
+  // one card: the whole journey after sending, then the deposit
+  let html = `<div class="card"><h1>${dep && dep.status === "settled" ? t("dep_ok") : pp ? t("t4_title") : t("send")}</h1>`;
+  html += line("ok", esc(t("proof_ready")));
+  html += line(ap.status === "settled" ? "ok" : "wait", ap.status === "settled" ? esc(t("sent_ok")) : `<span class="spinner"></span>&nbsp;${esc(t("sent_wait"))}`);
+  if (ap.status === "settled") html += line(res ? (res.ok ? "ok" : "bad") : "wait", res ? esc(res.ok ? t("approved") : t("l_bad")) : `<span class="spinner"></span>&nbsp;${esc(t("waiting_landlord"))}`);
   if (pp) {
-    html += `<div class="card"><h1>${t("t4_title")}</h1><div id="helpDep"></div>
-      <p class="big-result">${t("dep_q", { amount: eur(pp.amount) })}</p>
+    html += `<div id="helpDep"></div><p class="big-result">${t("dep_q", { amount: eur(pp.amount) })}</p>
       <div class="row"><button class="btn ok" id="pay">${t("pay", { amount: eur(pp.amount) })}</button>
-      <button class="btn secondary" id="nopay">${t("not_now")}</button></div></div>`;
+      <button class="btn secondary" id="nopay">${t("not_now")}</button></div>`;
   } else if (dep) {
-    html += `<div class="card"><h1>${t("t4_title")}</h1><div class="notice ${dep.status === "settled" ? "ok" : "wait"}">
-      ${dep.status === "settled" ? "<b>" + t("dep_ok") + "</b>" : `<span class="spinner"></span> ${t("dep_wait")}`}</div></div>`;
+    html += line(dep.status === "settled" ? "ok" : "wait", dep.status === "settled" ? esc(t("dep_ok")) : `<span class="spinner"></span>&nbsp;${esc(t("dep_wait"))}`);
   }
   const links = S.tenant.log.filter((l) => l.link).map((l) => `<li>${esc(l.text)} – <a href="${l.link}" target="_blank" rel="noopener">${l.link.split("/").pop().slice(0, 16)}…</a></li>`).join("");
-  html += `<details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>${links}</ul>
-           <p>Approval token: ${esc(ap.asset_id)}</p></div></details>`;
+  html += `<details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>${links}<li>Approval token: ${esc(ap.asset_id)}</li></ul></div></details></div>`;
   return html;
 }
 

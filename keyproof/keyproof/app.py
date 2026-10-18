@@ -213,11 +213,12 @@ class Demo:
         p = self.tenant.get("pending_payment")
         if not p:
             raise ValueError("No payment waiting.")
-        self.tenant["pending_payment"] = None
         if not yes:
+            self.tenant["pending_payment"] = None
             self.log("tenant", "Deposit cancelled.")
             return None
-        tid = self.rgb.pay(p["amount"])
+        tid = self.rgb.pay(p["amount"])          # if this fails, the request stays so the tenant can retry
+        self.tenant["pending_payment"] = None
         self.tenant["deposit"] = {"amount": p["amount"], "tid": tid, "status": "settling"}
         self.landlord["deposit"] = {"amount": p["amount"], "tid": tid, "status": "settling"}
         self.log("tenant", f"Paid the deposit: {p['amount']} tUSDT (RGB, on-chain).", self.rgb.link(tid))

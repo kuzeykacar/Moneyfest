@@ -22,6 +22,7 @@
 
   const T = {
     en: {
+      approved: "The landlord approved you",
       st_req: "Landlord’s request", st_docs: "Documents", st_proof: "Private proof", st_dep: "Deposit", sl_desc: "Describe your tenant", sl_pub: "Request published", sl_res: "Result",
       wallet_title: "In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
       wallet_use: "Use these credentials", wallet_none: "Nothing in your wallet yet.", wallet_arriving: "Credentials are on their way to your wallet (about 1–2 minutes)…",
@@ -67,6 +68,7 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
+      approved: "Il proprietario ti ha approvato",
       st_req: "Richiesta", st_docs: "Documenti", st_proof: "Prova privata", st_dep: "Deposito", sl_desc: "Descrivi l’inquilino", sl_pub: "Richiesta pubblicata", sl_res: "Risultato",
       wallet_title: "Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
       wallet_use: "Usa queste credenziali", wallet_none: "Ancora niente nel portafoglio.", wallet_arriving: "Le credenziali stanno arrivando (circa 1–2 minuti)…",
@@ -112,6 +114,7 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
+      approved: "Ev sahibi sizi onayladı",
       st_req: "Ev sahibinin isteği", st_docs: "Belgeler", st_proof: "Gizli kanıt", st_dep: "Depozito", sl_desc: "Kiracıyı tanımlayın", sl_pub: "İstek yayınlandı", sl_res: "Sonuç",
       wallet_title: "Cüzdanınızda", wallet_text: "Bankanızın, belediyenin ve üniversitenizin doğrudan cüzdanınıza gönderdiği resmi belgeler. PDF gerekmez.",
       wallet_use: "Bu belgeleri kullan", wallet_none: "Cüzdanınızda henüz bir şey yok.", wallet_arriving: "Belgeler cüzdanınıza geliyor (yaklaşık 1–2 dakika)…",
