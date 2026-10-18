@@ -8,16 +8,16 @@
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><a class="logo" href="/">🔑 KeyProof</a><span class="who" id="who"></span><span class="sp"></span><span id="langBox"></span></header>
-  <main id="main"></main>
+  <header class="top"><a class="logo" href="/">KeyProof</a><span class="who" id="who"></span><span class="sp"></span><span id="langBox"></span></header>
+  <div class="app single"><main id="main"></main></div>
   <footer class="foot"><a href="/tenant.html" id="fTenant"></a><a href="/landlord.html" id="fLandlord"></a><a href="/wallets.html" id="fWallets"></a></footer>
 </div>
 <script src="simple.js"></script>
 <script>
 const { api, esc, $, t } = KP;
 let S = null, busy = false, lastSig = "";
-const CREDS = [[1, "🏛️", "Demo Comune di Torino", "d_identity"], [2, "🏦", "Banca Demo", "d_income"], [3, "🎓", "Demo Politecnico di Torino", "d_occupation"],
-               [4, "🏦", "Banca Demo", "d_savings"], [5, "🏦", "Banca Demo", "d_guarantor"]];
+const CREDS = [[1, "landmark", "Demo Comune di Torino", "d_identity"], [2, "bank", "Banca Demo", "d_income"], [3, "cap", "Demo Politecnico di Torino", "d_occupation"],
+               [4, "bank", "Banca Demo", "d_savings"], [5, "bank", "Banca Demo", "d_guarantor"]];
 function render(force) {
   const iss = S && S.issuer;
   const sig = JSON.stringify([KP.lang(), iss && iss.status, busy]);
@@ -25,7 +25,7 @@ function render(force) {
   const tx = iss && S.tenant.log.find((l) => l.link && l.text.includes("credentials"));
   $("main").innerHTML = `<div class="card"><h1>${t("i_title")}</h1><p class="dim">${t("i_text")}</p>
     ${CREDS.map(([n, ic, who, d]) => `<label class="toggle"><input type="checkbox" data-t="${n}" ${n <= 3 ? "checked" : ""}>
-       <div><div class="title">${ic} ${t(d)}</div><div class="dim small">${esc(who)} → Elena Rossi</div></div></label>`).join("")}
+       <div><div class="title withicon">${KP.icon(ic)} ${t(d)}</div><div class="dim small">${esc(who)} → Elena Rossi</div></div></label>`).join("")}
     ${iss ? `<div class="notice ${iss.status === "settled" ? "ok" : "wait"}">${iss.status === "settled" ? "<b>" + t("i_done") + "</b>" : `<span class="spinner"></span> ${t("i_sent")}`}</div>` : ""}
     <button class="btn block" id="send" ${busy ? "disabled" : ""}>${busy ? `<span class="spinner"></span> ${t("i_sending")}` : t("i_send")}</button>
     ${tx ? `<details class="tech"><summary>${t("tech")}</summary><div class="content"><ul><li><a href="${tx.link}" target="_blank" rel="noopener">${tx.link}</a></li>
@@ -38,10 +38,10 @@ function render(force) {
     busy = false; refresh(true);
   };
 }
-function labels() { $("who").textContent = "🏛️ " + t("issuer"); $("fTenant").textContent = t("tenant") + " →"; $("fLandlord").textContent = t("landlord") + " →"; $("fWallets").textContent = t("wallets"); }
+function labels() { KP.badge("who", "landmark", t("issuer")); $("fTenant").textContent = t("tenant") + " →"; $("fLandlord").textContent = t("landlord") + " →"; $("fWallets").textContent = t("wallets"); }
 async function refresh(force) { try { S = await api("/api/state"); render(force); } catch (e) { console.error(e); } }
 $("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
-labels(); refresh(true); setInterval(() => refresh(false), 3000);
+KP.logo(); labels(); refresh(true); setInterval(() => refresh(false), 3000);
 </script>
 </body>
 </html>

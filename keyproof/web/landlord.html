@@ -9,14 +9,15 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="logo" href="/">🔑 KeyProof</a>
+    <a class="logo" href="/">KeyProof</a>
     <span class="who" id="who"></span>
     <span class="sp"></span>
     <span id="langBox"></span>
   </header>
-  <div class="progress" id="progress"><div></div><div></div><div></div></div>
-  <div class="stepinfo" id="stepinfo"></div>
-  <main id="main" aria-live="polite"></main>
+  <div class="app">
+    <aside class="side"><div class="stepinfo" id="stepinfo"></div><ol class="steps" id="progress"></ol></aside>
+    <main id="main" aria-live="polite"></main>
+  </div>
   <footer class="foot">
     <a href="/tenant.html" id="fTenant"></a>
     <a href="/wallets.html" id="fWallets"></a>
@@ -40,10 +41,7 @@ const EXAMPLES = {
   it: ["Studente maggiorenne con almeno 1200 euro al mese", "Lavoratore con stipendio di almeno 2000 euro e 5000 di risparmi", "Studenti con un genitore garante che guadagna 3000 euro"],
   tr: ["Ayda en az 1500 euro kazanan reşit bir öğrenci", "En az 2000 euro maaşlı ve 5000 euro birikimi olan çalışan", "Kefili ayda 3000 euro kazanan öğrenciler"],
 };
-function setProgress(step) {
-  [...$("progress").children].forEach((d, i) => d.classList.toggle("on", i < step));
-  $("stepinfo").textContent = t("step", { a: step, b: 3 });
-}
+function setProgress(step) { KP.steps([t("sl_desc"), t("sl_pub"), t("sl_res")], step); }
 
 // ------------------------------------------------------------ step 1: describe + confirm the form
 function emptyRules() { return { checks: { identity: false, income: false, occupation: false, savings: false, guarantor: false }, minIncome: 0, allowStudent: false, allowEmployed: false, leaseEnd: "", minSavings: 0, minGuarantor: 0 }; }
@@ -56,8 +54,8 @@ function screenForm() {
   return `<div class="card"><h1>${t("l1_title")}</h1><p class="dim">${t("l1_text")}</p>
       <textarea id="text" aria-label="${esc(t("l1_title"))}">${esc($("text") ? $("text").value : (EXAMPLES[KP.lang()] || EXAMPLES.en)[0])}</textarea>
       <div class="chips">${(EXAMPLES[KP.lang()] || EXAMPLES.en).map((e, i) => `<button class="chip" data-ex="${i}">${esc(e)}</button>`).join("")}</div>
-      <button class="btn block" id="fill">✨ ${t("fill")}</button>
-      ${aiNote ? `<div class="helper"><div class="who">💬 ${t("helper")}</div>${esc(aiNote)}</div>` : ""}</div>
+      <button class="btn block" id="fill">${KP.icon("sparkle")} ${t("fill")}</button>
+      ${aiNote ? `<div class="helper"><div class="who">${KP.icon("sparkle", 14)} ${t("helper")}</div>${esc(aiNote)}</div>` : ""}</div>
     ${draft ? `<div class="card"><h2>${t("l_rules")}</h2>
       ${tog("identity")}
       ${tog("income", num("minIncome", r.minIncome))}
@@ -86,7 +84,7 @@ function readDraft() {
 function screenStatus() {
   const req = S.request, r = req.rules, ap = S.tenant.approval;
   const reqHtml = `<div class="card"><h1>${t("l2_title")}</h1>
-      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon">•</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon">${KP.icon("dot")}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
       <p class="dim">${t("rent")}: <b>${eur(req.rent)}</b> · ${t("deposit")}: <b>${eur(req.deposit)}</b></p>
       ${ap ? "" : `<div class="notice wait"><span class="spinner"></span> ${t("l2_wait")}</div>
       <button class="btn secondary" id="edit">${t("new_request")}</button>`}</div>`;
@@ -96,8 +94,8 @@ function screenStatus() {
   if (!verdict || verdict.asset !== ap.asset_id) {
     res = `<div class="card"><div class="notice wait"><span class="spinner"></span> ${ap.status === "settled" ? t("l_checking") : t("l_arriving")}</div></div>`;
   } else {
-    res = `<div class="card"><div class="notice ${verdict.ok ? "ok" : "bad"} big-result">${verdict.ok ? "✓ " + t("l_ok") : "✗ " + t("l_bad")}</div>
-      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ${verdict.ok ? "ok" : "bad"}">${verdict.ok ? "✓" : "✗"}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+    res = `<div class="card"><div class="notice ${verdict.ok ? "ok" : "bad"} big-result">${KP.icon(verdict.ok ? "shield" : "alert", 22)} ${verdict.ok ? t("l_ok") : t("l_bad")}</div>
+      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ${verdict.ok ? "ok" : "bad"}">${KP.icon(verdict.ok ? "check" : "x")}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
       <p><b>${t("l_never")}</b></p><div id="summary"></div>
       <details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>
         ${verdict.steps.map((st) => `<li>${st[1] ? "✓" : "✗"} ${esc(st[0])}${st[2] ? " – " + esc(st[2]) : ""}</li>`).join("")}
@@ -187,7 +185,7 @@ function render(force, keepText) {
   if (!showForm) verify();
 }
 function labels() {
-  $("who").textContent = "🏠 " + t("landlord");
+  KP.badge("who", "home", t("landlord"));
   $("fTenant").textContent = t("tenant") + " →"; $("fWallets").textContent = t("wallets");
   $("fDev").textContent = t("dev"); $("fReset").textContent = t("reset");
 }
@@ -201,7 +199,7 @@ async function refresh(force) {
 }
 $("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
 $("fReset").onclick = async () => { if (confirm(t("reset") + "?")) { await api("/api/reset", {}); draft = null; verdict = null; editing = true; aiNote = ""; refresh(true); } };
-labels(); refresh(true); setInterval(() => { refresh(false); if (S && S.tenant.approval && !verdict) verify(); }, 2500);
+KP.logo(); labels(); refresh(true); setInterval(() => { refresh(false); if (S && S.tenant.approval && !verdict) verify(); }, 2500);
 </script>
 </body>
 </html>

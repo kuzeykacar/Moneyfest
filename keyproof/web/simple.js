@@ -22,7 +22,8 @@
 
   const T = {
     en: {
-      wallet_title: "📥 In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
+      st_req: "Landlord’s request", st_docs: "Documents", st_proof: "Private proof", st_dep: "Deposit", sl_desc: "Describe your tenant", sl_pub: "Request published", sl_res: "Result",
+      wallet_title: "In your wallet", wallet_text: "Coming next: banks, comuni and universities can send signed credentials straight to your wallet, so no PDF is needed.",
       wallet_use: "Use these credentials", wallet_none: "Nothing in your wallet yet.", wallet_arriving: "Credentials are on their way to your wallet (about 1–2 minutes)…",
       or_pdf: "Or add signed PDF documents:", issuer: "Issuer",
       i_title: "Send official credentials", i_text: "Banca Demo, Demo Comune di Torino and Demo Politecnico send Elena's signed credentials straight to her wallet, on Bitcoin. In the future, this replaces PDF documents.",
@@ -41,7 +42,7 @@
       yes_send: "Yes, send it", cancel: "Cancel",
       sent_wait: "Sent. It reaches the landlord in about 1–2 minutes.", sent_ok: "The landlord has received your proof.",
       t4_title: "Deposit", dep_q: "Pay the deposit of {amount}?", pay: "Pay {amount}", not_now: "Not now",
-      dep_wait: "Payment sent. It arrives in about 1–2 minutes.", dep_ok: "Deposit paid. The flat is yours to confirm with the landlord. 🎉",
+      dep_wait: "Payment sent. It arrives in about 1–2 minutes.", dep_ok: "Deposit paid. The flat is yours to confirm with the landlord.",
       waiting_landlord: "Waiting for the landlord to check your proof…",
       l1_title: "What kind of tenant are you looking for?", l1_text: "Write it in your own words. Your assistant fills in the form for you – you can change everything.",
       fill: "Fill in the form for me", filling: "Your assistant is reading…",
@@ -66,7 +67,8 @@
       home_text: "Prove you qualify for a flat without showing your documents.",
     },
     it: {
-      wallet_title: "📥 Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
+      st_req: "Richiesta", st_docs: "Documenti", st_proof: "Prova privata", st_dep: "Deposito", sl_desc: "Descrivi l’inquilino", sl_pub: "Richiesta pubblicata", sl_res: "Risultato",
+      wallet_title: "Nel tuo portafoglio", wallet_text: "Credenziali ufficiali inviate dalla banca, dal comune e dall'università direttamente al tuo portafoglio. Nessun PDF.",
       wallet_use: "Usa queste credenziali", wallet_none: "Ancora niente nel portafoglio.", wallet_arriving: "Le credenziali stanno arrivando (circa 1–2 minuti)…",
       or_pdf: "Oppure aggiungi documenti PDF firmati:", issuer: "Ente",
       i_title: "Invia credenziali ufficiali", i_text: "Banca Demo, Demo Comune di Torino e Demo Politecnico inviano le credenziali firmate di Elena direttamente al suo portafoglio, su Bitcoin. In futuro sostituiscono i PDF.",
@@ -85,7 +87,7 @@
       yes_send: "Sì, invia", cancel: "Annulla",
       sent_wait: "Inviata. Arriva al proprietario in circa 1–2 minuti.", sent_ok: "Il proprietario ha ricevuto la tua prova.",
       t4_title: "Deposito", dep_q: "Pagare il deposito di {amount}?", pay: "Paga {amount}", not_now: "Non ora",
-      dep_wait: "Pagamento inviato. Arriva in circa 1–2 minuti.", dep_ok: "Deposito pagato. 🎉",
+      dep_wait: "Pagamento inviato. Arriva in circa 1–2 minuti.", dep_ok: "Deposito pagato.",
       waiting_landlord: "In attesa che il proprietario controlli la prova…",
       l1_title: "Che tipo di inquilino cerchi?", l1_text: "Scrivilo con parole tue. Il tuo assistente compila il modulo – puoi cambiare tutto.",
       fill: "Compila il modulo per me", filling: "Il tuo assistente sta leggendo…",
@@ -110,7 +112,8 @@
       home_text: "Dimostra di avere i requisiti per una casa senza mostrare i tuoi documenti.",
     },
     tr: {
-      wallet_title: "📥 Cüzdanınızda", wallet_text: "Bankanızın, belediyenin ve üniversitenizin doğrudan cüzdanınıza gönderdiği resmi belgeler. PDF gerekmez.",
+      st_req: "Ev sahibinin isteği", st_docs: "Belgeler", st_proof: "Gizli kanıt", st_dep: "Depozito", sl_desc: "Kiracıyı tanımlayın", sl_pub: "İstek yayınlandı", sl_res: "Sonuç",
+      wallet_title: "Cüzdanınızda", wallet_text: "Bankanızın, belediyenin ve üniversitenizin doğrudan cüzdanınıza gönderdiği resmi belgeler. PDF gerekmez.",
       wallet_use: "Bu belgeleri kullan", wallet_none: "Cüzdanınızda henüz bir şey yok.", wallet_arriving: "Belgeler cüzdanınıza geliyor (yaklaşık 1–2 dakika)…",
       or_pdf: "Ya da imzalı PDF belgeleri ekleyin:", issuer: "Kurum",
       i_title: "Resmi belgeleri gönder", i_text: "Banca Demo, Demo Torino Belediyesi ve Demo Politeknik, Elena'nın imzalı belgelerini Bitcoin üzerinden doğrudan cüzdanına gönderir. Gelecekte PDF'lerin yerini alır.",
@@ -129,7 +132,7 @@
       yes_send: "Evet, gönder", cancel: "Vazgeç",
       sent_wait: "Gönderildi. Yaklaşık 1–2 dakikada ev sahibine ulaşır.", sent_ok: "Ev sahibi kanıtınızı aldı.",
       t4_title: "Depozito", dep_q: "{amount} depozito ödensin mi?", pay: "{amount} öde", not_now: "Şimdi değil",
-      dep_wait: "Ödeme gönderildi. Yaklaşık 1–2 dakikada ulaşır.", dep_ok: "Depozito ödendi. 🎉",
+      dep_wait: "Ödeme gönderildi. Yaklaşık 1–2 dakikada ulaşır.", dep_ok: "Depozito ödendi.",
       waiting_landlord: "Ev sahibinin kanıtı kontrol etmesi bekleniyor…",
       l1_title: "Nasıl bir kiracı arıyorsunuz?", l1_text: "Kendi cümlelerinizle yazın. Asistanınız formu doldurur – her şeyi değiştirebilirsiniz.",
       fill: "Formu benim için doldur", filling: "Asistanınız okuyor…",
@@ -160,6 +163,35 @@
     return s;
   };
 
+  // Line icons (Lucide-style, ISC licence): simple and consistent, no emojis.
+  const P = {
+    key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/>',
+    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+    landmark: '<path d="M3 21h18"/><path d="M5 21V10"/><path d="M19 21V10"/><path d="M9.5 21V10"/><path d="M14.5 21V10"/><path d="m2 10 10-6 10 6"/>',
+    bank: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/>',
+    cap: '<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>',
+    file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    alert: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>',
+    sparkle: '<path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.5l-1.8-5L5 9.7l5.2-1.8Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/>',
+    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6Z"/>',
+    shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    dot: '<circle cx="12" cy="12" r="3"/>',
+  };
+  S.icon = (name, size) => `<svg class="ic" width="${size || 20}" height="${size || 20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || P.dot}</svg>`;
+  S.logo = () => document.querySelectorAll(".logo").forEach((el) => (el.innerHTML = `<span class="mark">${S.icon("key", 17)}</span><span>KeyProof</span>`));
+  S.badge = (id, icon, text) => { const el = document.getElementById(id); if (el) el.innerHTML = S.icon(icon, 15) + "<span>" + S.esc(text) + "</span>"; };
+  // Vertical step list in the side column (a compact bar on phones)
+  S.steps = (labels, current) => {
+    const ol = document.getElementById("progress");
+    if (ol) ol.innerHTML = labels.map((l, i) => `<li class="${i + 1 < current ? "done" : i + 1 === current ? "on" : ""}"><span class="n">${i + 1 < current ? S.icon("check", 14) : i + 1}</span><span class="l">${S.esc(l)}</span></li>`).join("");
+    const info = document.getElementById("stepinfo");
+    if (info) info.textContent = current ? S.t("step", { a: current, b: labels.length }) : "";
+  };
+
   S.SLOTS = ["identity", "income", "occupation", "savings", "guarantor"];
   S.SAMPLE = { identity: "1_identity.pdf", income: "2_income.pdf", occupation: "3_enrolment.pdf", savings: "4_savings.pdf", guarantor: "5_guarantor.pdf" };
   // A landlord rule in plain words
@@ -180,7 +212,7 @@
     if (!cache[k]) cache[k] = S.api("/api/ai/explain", { kind, lang: S.lang(), facts }).catch(() => ({ text: "", source: "error" }));
     return cache[k];
   };
-  S.helperHtml = (text, source) => text ? `<div class="helper"><div class="who">💬 ${S.esc(S.t("helper"))}${source === "qvac" ? " · local AI" : ""}</div>${S.esc(text)}</div>` : "";
+  S.helperHtml = (text, source) => text ? `<div class="helper"><div class="who">${S.icon("sparkle", 14)} ${S.esc(S.t("helper"))}${source === "qvac" ? " · local AI" : ""}</div>${S.esc(text)}</div>` : "";
 
   S.langSelect = (onChange) => {
     const sel = document.createElement("select");

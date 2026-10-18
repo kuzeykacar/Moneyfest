@@ -8,16 +8,16 @@
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><span class="logo">🔑 KeyProof</span><span class="sp"></span><span id="langBox"></span></header>
-  <div class="card" style="margin-top:28px">
+  <header class="top"><span class="logo">KeyProof</span><span class="sp"></span><span id="langBox"></span></header>
+  <div class="app single"><div class="card hero">
     <h1 id="hText"></h1>
     <p class="dim" id="hSub"></p>
     <div style="display:grid;gap:14px;margin-top:20px">
       <a class="btn block" href="/tenant.html" id="hTenant"></a>
       <a class="btn secondary block" href="/landlord.html" id="hLandlord"></a>
-      <a class="btn secondary block" href="/issuer.html">🏛️ Issuer (bank, comune, university)</a>
+      <a class="btn secondary block" href="/issuer.html" id="hIssuer"></a>
     </div>
-  </div>
+  </div></div>
   <footer class="foot"><a href="/wallets.html" id="fWallets"></a><a href="/dev.html" id="fDev"></a></footer>
 </div>
 <script src="simple.js"></script>
@@ -25,10 +25,11 @@
 const { $, t } = KP;
 function labels() {
   $("hText").textContent = t("home_text"); $("hSub").textContent = t("home_title");
-  $("hTenant").textContent = "👤 " + t("home_tenant"); $("hLandlord").textContent = "🏠 " + t("home_landlord");
+  $("hTenant").innerHTML = KP.icon("user") + " " + t("home_tenant"); $("hLandlord").innerHTML = KP.icon("home") + " " + t("home_landlord");
+  $("hIssuer").innerHTML = KP.icon("landmark") + " " + t("issuer") + " · bank, comune, university";
   $("fWallets").textContent = t("wallets"); $("fDev").textContent = t("dev");
 }
-$("langBox").appendChild(KP.langSelect(labels)); labels();
+$("langBox").appendChild(KP.langSelect(labels)); KP.logo(); labels();
 </script>
 </body>
 </html>

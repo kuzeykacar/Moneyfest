@@ -9,14 +9,15 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="logo" href="/">🔑 KeyProof</a>
+    <a class="logo" href="/">KeyProof</a>
     <span class="who" id="who"></span>
     <span class="sp"></span>
     <span id="langBox"></span>
   </header>
-  <div class="progress" id="progress"><div></div><div></div><div></div><div></div></div>
-  <div class="stepinfo" id="stepinfo"></div>
-  <main id="main" aria-live="polite"></main>
+  <div class="app">
+    <aside class="side"><div class="stepinfo" id="stepinfo"></div><ol class="steps" id="progress"></ol></aside>
+    <main id="main" aria-live="polite"></main>
+  </div>
   <footer class="foot">
     <a href="/landlord.html" id="fLandlord"></a>
     <a href="/issuer.html" id="fIssuer">Issuer</a>
@@ -55,10 +56,7 @@ function ask(title, text, yesLabel, onYes) {
 function needed() { return S && S.request ? KP.ticked(S.request.rules) : []; }
 function docsReady() { return needed().every((s) => S.tenant.docs[s] && S.tenant.docs[s].ok); }
 
-function setProgress(step, of) {
-  [...$("progress").children].forEach((d, i) => d.classList.toggle("on", i < step));
-  $("stepinfo").textContent = step ? t("step", { a: step, b: of }) : "";
-}
+function setProgress(step) { KP.steps([t("st_req"), t("st_docs"), t("st_proof"), t("st_dep")], step); }
 
 // ------------------------------------------------------------ screens
 function screenWaiting() {
@@ -70,7 +68,7 @@ function screenWaiting() {
 function screenRequest() {
   setProgress(1, 4);
   const r = S.request.rules;
-  const items = KP.ticked(r).map((s) => `<div class="item"><div class="icon">✔︎</div><div class="body"><div class="title">${esc(KP.ruleText(s, r))}</div></div></div>`).join("");
+  const items = KP.ticked(r).map((s) => `<div class="item"><div class="icon">${KP.icon("check")}</div><div class="body"><div class="title">${esc(KP.ruleText(s, r))}</div></div></div>`).join("");
   return `<div class="card"><h1>${t("t1_title")}</h1>${items}
             <p class="dim">${t("rent")}: <b>${eur(S.request.rent)}</b> · ${t("deposit")}: <b>${eur(S.request.deposit)}</b></p>
             <div id="help1"></div>
@@ -82,20 +80,20 @@ function screenDocs() {
   const rows = needed().map((s) => {
     const d = S.tenant.docs[s];
     const ok = d && d.ok;
-    return `<div class="item"><div class="icon ${ok ? "ok" : ""}">${ok ? "✓" : "📄"}</div><div class="body">
+    return `<div class="item"><div class="icon ${ok ? "ok" : ""}">${KP.icon(ok ? "check" : "file")}</div><div class="body">
         <div class="title">${t("d_" + s)}</div><div class="dim small">${t("s_" + s)}</div>
-        <div class="${ok ? "" : "dim"}" style="margin-top:4px">${ok ? "✓ " + esc(t("original", { issuer: d.issuer })) : t("missing")}</div>
+        <div class="${ok ? "okText" : "dim"}" style="margin-top:4px">${ok ? esc(t("original", { issuer: d.issuer })) : t("missing")}</div>
         ${ok ? "" : `<div class="actions row">
             <label class="btn secondary">${t("choose")}<input type="file" accept="application/pdf" class="hidden" data-slot="${s}"></label>
             <button class="btn link" data-sample="${s}">${t("use_demo")}</button></div>`}
       </div></div>`;
   }).join("");
-  const rej = rejected ? `<div class="notice bad"><b>⛔ ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
+  const rej = rejected ? `<div class="notice bad"><b>${KP.icon("alert", 18)} ${esc(rejected.entry.file)} – ${t("refused")}</b><br>${esc(rejected.reason)}</div>
                           <div id="helpRej">${KP.helperHtml(rejected.help, rejected.source)}</div>` : "";
-  return `<div class="card"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}${rows}
+  return `<div class="card wide-items"><h1>${t("t2_title")}</h1><p class="dim">${t("t2_text")}</p>${rej}<div class="items">${rows}</div>
             <div class="row" style="margin-top:12px"><button class="btn link" id="fake">${t("try_fake")}</button></div>
             <button class="btn block" id="next2" ${docsReady() ? "" : "disabled"}>${t("t2_next")} →</button></div>
-          <div class="card" id="walletCard"><h2>${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
+          <div class="card" id="walletCard"><h2 class="withicon">${KP.icon("inbox")} ${t("wallet_title")}</h2><p class="dim">${t("wallet_text")}</p><div id="walletList"><span class="spinner"></span></div></div>`;
 }
 
 function screenProof() {
@@ -103,8 +101,8 @@ function screenProof() {
   const r = S.request.rules;
   let inner;
   if (proving) inner = `<div class="notice wait"><span class="spinner"></span> ${t("proving")}</div><div class="bar"><div id="pbar"></div></div>`;
-  else if (proof) inner = `<div class="notice ok"><b>✓ ${t("proof_ready")}</b></div>
-      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ok">✓</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
+  else if (proof) inner = `<div class="notice ok"><b>${KP.icon("lock", 18)} ${t("proof_ready")}</b></div>
+      ${KP.ticked(r).map((s) => `<div class="result-line"><span class="icon ok">${KP.icon("check")}</span>${esc(KP.ruleText(s, r))}</div>`).join("")}
       <button class="btn ok block" id="send" style="margin-top:14px">${t("send")} →</button>`;
   else if (proofError) {
     const pre = Z.precheck(Z.publicRequest(r), cards()).filter((p) => !p.ok);
@@ -118,7 +116,7 @@ function screenAfter() {
   setProgress(4, 4);
   const ap = S.tenant.approval, pp = S.tenant.pending_payment, dep = S.tenant.deposit;
   const res = S.landlord.result;
-  let html = `<div class="card"><h1>${ap.status === "settled" ? "✓ " + t("sent_ok") : t("send")}</h1>`;
+  let html = `<div class="card"><h1>${ap.status === "settled" ? t("sent_ok") : t("send")}</h1>`;
   if (ap.status !== "settled") html += `<div class="notice wait"><span class="spinner"></span> ${t("sent_wait")}</div>`;
   else if (!res) html += `<div class="notice wait"><span class="spinner"></span> ${t("waiting_landlord")}</div>`;
   html += `</div>`;
@@ -129,7 +127,7 @@ function screenAfter() {
       <button class="btn secondary" id="nopay">${t("not_now")}</button></div></div>`;
   } else if (dep) {
     html += `<div class="card"><h1>${t("t4_title")}</h1><div class="notice ${dep.status === "settled" ? "ok" : "wait"}">
-      ${dep.status === "settled" ? "<b>✓ " + t("dep_ok") + "</b>" : `<span class="spinner"></span> ${t("dep_wait")}`}</div></div>`;
+      ${dep.status === "settled" ? "<b>" + t("dep_ok") + "</b>" : `<span class="spinner"></span> ${t("dep_wait")}`}</div></div>`;
   }
   const links = S.tenant.log.filter((l) => l.link).map((l) => `<li>${esc(l.text)} – <a href="${l.link}" target="_blank" rel="noopener">${l.link.split("/").pop().slice(0, 16)}…</a></li>`).join("");
   html += `<details class="tech"><summary>${t("tech")}</summary><div class="content"><ul>${links}</ul>
@@ -198,9 +196,9 @@ async function fillWallet() {
     return;
   }
   const need = needed();
-  box.innerHTML = creds.map((c) => `<div class="item"><div class="icon ${c.ok ? "ok" : "bad"}">${c.ok ? "✓" : "✗"}</div><div class="body">
+  box.innerHTML = creds.map((c) => `<div class="item"><div class="icon ${c.ok ? "ok" : "bad"}">${KP.icon(c.ok ? "shield" : "x")}</div><div class="body">
       <div class="title">${esc(c.label)}</div><div class="dim small">${esc(c.issuer || "")}</div>
-      <div class="small ${c.ok ? "" : "dim"}">${c.ok ? "✓ " + esc(t("original", { issuer: c.issuer })) : esc((c.checks.find((x) => !x.ok) || {}).detail || "")}</div></div></div>`).join("")
+      <div class="small ${c.ok ? "okText" : "dim"}">${c.ok ? esc(t("original", { issuer: c.issuer })) : esc((c.checks.find((x) => !x.ok) || {}).detail || "")}</div></div></div>`).join("")
     + (need.every((s) => S.tenant.docs[s] && S.tenant.docs[s].ok) ? "" : `<button class="btn ok block" id="useWallet" style="margin-top:10px">${t("wallet_use")}</button>`)
     ;
   const u = $("useWallet"); if (u) u.onclick = async () => { await api("/api/tenant/use_wallet", {}); refresh(true); };
@@ -234,14 +232,14 @@ function render(force) {
 }
 
 function labels() {
-  $("who").textContent = "👤 " + t("tenant");
+  KP.badge("who", "user", t("tenant"));
   $("fLandlord").textContent = t("landlord") + " →"; $("fWallets").textContent = t("wallets");
   $("fDev").textContent = t("dev"); $("fReset").textContent = t("reset");
 }
 async function refresh(force) { try { S = await api("/api/state"); render(force); } catch (e) { console.error(e); } }
 $("langBox").appendChild(KP.langSelect(() => { labels(); render(true); }));
 $("fReset").onclick = async () => { if (confirm(t("reset") + "?")) { await api("/api/reset", {}); proof = null; rejected = null; view = 1; refresh(true); } };
-labels(); refresh(true); setInterval(() => refresh(false), 2500);
+KP.logo(); labels(); refresh(true); setInterval(() => refresh(false), 2500);
 // keep the rejection helper text fresh once the AI answers
 setInterval(() => { if (rejected && rejected.help && $("helpRej") && !$("helpRej").innerHTML) $("helpRej").innerHTML = KP.helperHtml(rejected.help, rejected.source); }, 500);
 </script>
